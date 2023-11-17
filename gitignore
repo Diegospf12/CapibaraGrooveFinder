@@ -2,12 +2,12 @@
 .DS_Store
 
 backend/venv/
-frontend/node_modules/
-frontend/dist/
+frontend/spotifybrowser/node_modules/
+frontend/spotifybrowser/dist/
 
 backend/.env
-frontend/.env.local
-frontend/.env.*.local
+frontend/spotifybrowser/.env.local
+frontend/spotifybrowser/.env.*.local
 backend/.cache
 
 .csv
