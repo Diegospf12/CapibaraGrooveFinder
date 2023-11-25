@@ -255,7 +255,12 @@ class TextRetrival:
     def cosine_similarity(self, query_vector, doc_vectors, k):
         similarities = {}
         for doc_id, doc_vector in doc_vectors.items():
-            similarity = np.dot(query_vector, doc_vector) / (np.linalg.norm(query_vector) * np.linalg.norm(doc_vector))
+            doc_norm = np.linalg.norm(doc_vector)
+            if doc_norm == 0:
+                similarity =0
+            else:
+                similarity = np.dot(query_vector, doc_vector) / (np.linalg.norm(query_vector) * doc_norm)
+
             similarities[doc_id] = similarity
         # Ordenar los documentos por similitud
         sorted_docs = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
@@ -264,7 +269,7 @@ class TextRetrival:
         return top_k_docs
 
     def build_document_vectors(self, query):
-        terms = []
+        terms = set()
         files = os.listdir('global_index')
         doc_vectors = {}  # Nuevo diccionario para almacenar los vectores de los documentos
         for file in files:
@@ -309,11 +314,11 @@ class TextRetrival:
 if __name__ == "__main__":
     data = LoadData('spotify_songs.csv').get_data()
     spimi = SPIMI(data)
-    #spimi.spimi_invert()
+    spimi.spimi_invert()
 
     text_retrival = TextRetrival()
     query = "la beca de kevin"
     k = 10
     
     text_retrival.show_results(query, k, data)
-    #text_retrival.show_top_k(text_retrival.dict_query(query), k, data)
+    text_retrival.show_top_k(text_retrival.dict_query(query), k, data)
