@@ -199,6 +199,7 @@ class TextRetrival:
         filtered_text = [stemmers.get(lenguage, SnowballStemmer('english')).stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-Z]+$", w)]
         return filtered_text
 
+        
     def cosine_score(self, query, k):
         processed_query = self.process_query(query)
         query_tf = {term: processed_query.count(term) for term in processed_query}
@@ -213,15 +214,20 @@ class TextRetrival:
             for term, tf_q in query_tf.items():
                 if term in inverted_index:
                     df_t = len(inverted_index[term])
-                    idf_t = math.log(len(inverted_index) / (1+df_t))
-                    tfidf_t_q = (1+math.log(tf_q)) * idf_t
+                    idf_t = math.log(len(inverted_index) / (1 + df_t))
+                    tfidf_t_q = (1 + math.log(tf_q)) * idf_t
 
                     for doc in inverted_index[term]:
-                        tfidf_t_d = (1+math.log(doc["tf"])) * idf_t
+                        tfidf_t_d = (1 + math.log(doc["tf"])) * idf_t
                         document_scores[doc["id"]] += tfidf_t_d * tfidf_t_q
 
         for doc_id in document_scores:
             document_scores[doc_id] /= norm_q
+
+        max_score = max(document_scores.values())
+        if max_score != 0:
+            for doc_id in document_scores:
+                document_scores[doc_id] /= max_score
 
         sorted_documents = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
 
@@ -231,10 +237,10 @@ class TextRetrival:
             sorted_documents_with_freq.append((doc_id, score, doc_freq))
 
         sorted_documents_with_freq = sorted(sorted_documents_with_freq, key=lambda x: (x[1], x[2]), reverse=True)
-    
+
         return [{"id": doc_id, "score": score, "freq": freq} for doc_id, score, freq in sorted_documents_with_freq[:k]]
-
-
+    """
+    
     def show_results(self, query, k, dataset):
         start_time = time.time()
         relevant_doc_ids = [doc['id'] for doc in self.cosine_score(query, k)]
@@ -243,6 +249,34 @@ class TextRetrival:
         relevant_docs = dataset[dataset['track_id'].isin(relevant_doc_ids)]
         print(relevant_docs)
         print(elapsed_time)
+    
+    """
+
+    def show_results(self, query, k, dataset):
+        start_time = time.time()
+        relevant_docs_scores = self.cosine_score(query, k)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        relevant_doc_ids = [doc['id'] for doc in relevant_docs_scores]
+        relevant_docs = dataset[dataset['track_id'].isin(relevant_doc_ids)]
+
+        print("Results:")
+        for doc in relevant_docs_scores:
+            doc_id = doc['id']
+            score = doc['score']
+            freq = doc['freq']
+            doc_data = dataset[dataset['track_id'] == doc_id]
+            print(f"Document ID: {doc_id}, Score: {score}, Frequency: {freq}")
+            
+            # Imprimir el score en la consola
+            print(f"Score: {score}")
+            
+            print(doc_data)
+            print("------")
+
+        print(f"\nElapsed Time: {elapsed_time} seconds")
+
 
     def k_means(self, query, k, dataset):
         start_time = time.time()
