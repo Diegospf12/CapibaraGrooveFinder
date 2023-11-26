@@ -194,9 +194,9 @@ class TextRetrival:
         with open('global_index/block_0.json', 'r') as file:
             self.inverted_index = json.load(file)
 
-    def process_query(self,query):
+    def process_query(self,query, lenguage='es'):
         tokens = nltk.word_tokenize(query)
-        filtered_text = [stemmers['es'].stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-Z]+$", w)]
+        filtered_text = [stemmers.get(lenguage, SnowballStemmer('english')).stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-Z]+$", w)]
         return filtered_text
 
     def cosine_score(self, query, k):
@@ -205,23 +205,36 @@ class TextRetrival:
         norm_q = math.sqrt(sum(tf**2 for tf in query_tf.values()))
 
         document_scores = defaultdict(float)
-        for term, tf_q in query_tf.items():
-            for index_file in glob.glob('global_index/*.json'):
-                with open(index_file, 'r') as file:
-                    inverted_index = json.load(file)
-                    if term in inverted_index:
-                        df_t = len(inverted_index[term])
-                        tfidf_t_q = math.log1p(tf_q) * math.log(len(inverted_index) / df_t)
-                        for doc in inverted_index[term]:
-                            tfidf_t_d = math.log1p(doc["tf"]) * math.log(len(inverted_index) / df_t)
-                            document_scores[doc["id"]] += tfidf_t_d * tfidf_t_q
+
+        for index_file in glob.glob('global_index/*.json'):
+            with open(index_file, 'r') as file:
+                inverted_index = json.load(file)
+
+            for term, tf_q in query_tf.items():
+                if term in inverted_index:
+                    df_t = len(inverted_index[term])
+                    idf_t = math.log(len(inverted_index) / (1+df_t))
+                    tfidf_t_q = (1+math.log(tf_q)) * idf_t
+
+                    for doc in inverted_index[term]:
+                        tfidf_t_d = (1+math.log(doc["tf"])) * idf_t
+                        document_scores[doc["id"]] += tfidf_t_d * tfidf_t_q
 
         for doc_id in document_scores:
             document_scores[doc_id] /= norm_q
 
         sorted_documents = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
-        return [{"id":doc_id, "score":score} for doc_id, score in sorted_documents[:k]]
+
+        sorted_documents_with_freq = []
+        for doc_id, score in sorted_documents:
+            doc_freq = sum(1 for term in query_tf if any(doc["id"] == doc_id and term == doc["term"] for doc in inverted_index.get(term, [])))
+            sorted_documents_with_freq.append((doc_id, score, doc_freq))
+
+        sorted_documents_with_freq = sorted(sorted_documents_with_freq, key=lambda x: (x[1], x[2]), reverse=True)
     
+        return [{"id": doc_id, "score": score, "freq": freq} for doc_id, score, freq in sorted_documents_with_freq[:k]]
+
+
     def show_results(self, query, k, dataset):
         start_time = time.time()
         relevant_doc_ids = [doc['id'] for doc in self.cosine_score(query, k)]
@@ -269,13 +282,19 @@ class TextRetrival:
         return top_k_docs
 
     def build_document_vectors(self, query):
-        terms = set()
+        terms = list(set())
         files = os.listdir('global_index')
         doc_vectors = {}  # Nuevo diccionario para almacenar los vectores de los documentos
         for file in files:
             with open(os.path.join('global_index', file), 'r') as f:
                 inverted_index = json.load(f)
-                terms.extend(inverted_index.keys())
+                if inverted_index:
+                    if inverted_index:
+                        if isinstance( inverted_index, list):
+                            terms.update([item['term'] for w in inverted_index for item in w])
+                        else:
+                            terms.update(inverted_index.keys())
+        terms = list(terms)
         terms.extend(query.keys())
         terms = sorted(set(terms))
         term_index = {term: index for index, term in enumerate(terms)}
@@ -295,6 +314,11 @@ class TextRetrival:
                 doc_vectors[doc_id] = np.pad(vector, (0, len(terms) - len(vector)))
         query_vector = np.zeros(len(terms))
         for term, tf in query.items():
+            if term in inverted_index:
+                df_t = len(inverted_index[term])
+                if idf_t == 0:
+                    df_t = 1
+                idf_t = math.log(len(inverted_index) / df_t)
             if term in term_index:
                 query_vector[term_index[term]] = tf
         return doc_vectors, query_vector
@@ -306,7 +330,7 @@ class TextRetrival:
             doc_id = doc['id']
             score = doc['score']
             doc_data = dataset[dataset['track_id'] == doc_id]
-
+            print(f"Top {i} Document:")
             print(doc_data)
             print(f"Score: {score}\n")
 
@@ -317,8 +341,10 @@ if __name__ == "__main__":
     spimi.spimi_invert()
 
     text_retrival = TextRetrival()
-    query = "la beca de kevin"
+    query = "Que Mas Pues"
     k = 10
-    
+    print("Results for Query:", query)
+
     text_retrival.show_results(query, k, data)
+    print("\nTop Documents for Query:", query)
     text_retrival.show_top_k(text_retrival.dict_query(query), k, data)
