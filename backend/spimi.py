@@ -48,15 +48,15 @@ class SPIMI:
     def __init__(self, data):
         self.block_limit = 20000
         self.data = data
-        self.data = self.data[['track_name', 'track_artist', 'lyrics', 'track_album_name']]
+        self.data = self.data[['track_id','track_name', 'track_artist', 'lyrics', 'track_album_name', 'language']]
 
     def preprocess(self, row):
         object = {}
         id = row[0]
-        language = row[24]
-        doc = ' '.join(str(item) for item in row)
+        language = row[5]
+        doc = ' '.join(str(item) for item in row[1:4])
         tokens = nltk.word_tokenize(doc)
-        texto_filtrado = [word for word in tokens if not word in stopwords_list and re.match("^[a-zA-ZÁÉÍÓÚáéíóúñÑ0-9]+$", word)]
+        texto_filtrado = [word for word in tokens if not word in stopwords_list and re.match("^[a-zA-ZÁÉÍÓÚáéíóúñÑ]+$", word)]
         texto_filtrado = [stemmers.get(language, SnowballStemmer('english')).stem(w) for w in texto_filtrado]
         object["id"] = id
         object["terms"] = texto_filtrado
@@ -198,7 +198,7 @@ class TextRetrival:
 
     def process_query(self,query, lenguage='es'):
         tokens = nltk.word_tokenize(query)
-        filtered_text = [stemmers.get(lenguage, SnowballStemmer('english')).stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-ZÁÉÍÓÚáéíóúñÑ0-9]+$", w)]
+        filtered_text = [stemmers.get(lenguage, SnowballStemmer('english')).stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-ZÁÉÍÓÚáéíóúñÑ]+$", w)]
         return filtered_text
 
         
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     #spimi.spimi_invert()
 
     text_retrival = TextRetrival()
-    query = "rosalía"
+    query = "que mas pues"
     k = 10
     lenguage = obtener_abreviatura_idioma(query)
 
