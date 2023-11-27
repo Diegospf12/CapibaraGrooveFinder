@@ -227,6 +227,8 @@ Dentro de la carpeta frontend se ejecuta el archivo main.py, este desplegara una
 
 # Experimentación
 
+## Tablas y gráficos de los resultados experimentales
+
 |      | Implementación | Postgress |
 |------|----------------|-----------|
 | 1000 |     15 ms      |   19 ms   |
@@ -237,14 +239,16 @@ Dentro de la carpeta frontend se ejecuta el archivo main.py, este desplegara una
 |32000 |    333 ms      |  359 ms   |
 |64000 |    380 ms      |  360 ms   |
 
-Implementación de Índice Invertido
+### Implementación de Índice Invertido
 
 Nuestra implementación personalizada de índice invertido ha demostrado ser eficiente en la búsqueda de datos basada en texto. Hemos medido el rendimiento de nuestra implementación en milisegundos para una variedad de tamaños de datos de prueba, desde 1,000 hasta 64,000 registros. 
 
-PostgreSQL con Índice Invertido
+### PostgreSQL con Índice Invertido
 
 Por otro lado, hemos utilizado PostgreSQL con sus propios índices invertidos para realizar búsquedas de texto similares a nuestras pruebas con datos de prueba de tamaños comparables.
 
-Conclusión
+### Discusión
+
+### Conclusión
 
 Los resultados de nuestra comparación indican que PostgreSQL supera ligeramente a nuestra implementación personalizada de índice invertido en términos de rendimiento en la mayoría de los escenarios. Aunque nuestra implementación es eficiente, PostgreSQL, con su optimización interna y capacidad para manejar grandes conjuntos de datos, muestra tiempos de búsqueda ligeramente más bajos en las pruebas.
