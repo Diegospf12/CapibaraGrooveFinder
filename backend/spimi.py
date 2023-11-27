@@ -200,8 +200,45 @@ class TextRetrival:
         tokens = nltk.word_tokenize(query)
         filtered_text = [stemmers.get(lenguage, SnowballStemmer('english')).stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-ZÁÉÍÓÚáéíóúñÑ]+$", w)]
         return filtered_text
+    
+    def cosine_score(self, query, lenguage, k):
+        processed_query = self.process_query(query, lenguage)
+        query_tf = {term: processed_query.count(term) for term in processed_query}
+        norm_q = math.sqrt(sum(tf**2 for tf in query_tf.values()))
 
-        
+        document_scores = defaultdict(float)
+
+        for index_file in glob.glob('global_index/*.json'):
+            with open(index_file, 'r') as file:
+                inverted_index = json.load(file)
+
+            for term, tf_q in query_tf.items():
+                if term in inverted_index:
+                    df_t = len(inverted_index[term])
+                    idf_t = math.log(len(inverted_index) / (1 + df_t))
+                    tfidf_t_q = (1 + math.log(tf_q)) * idf_t
+
+                    max_tfidf_d = max((1 + math.log(doc["tf"])) * idf_t for doc in inverted_index[term])
+
+                    for doc in inverted_index[term]:
+                        tfidf_t_d = (1 + math.log(doc["tf"])) * idf_t / max_tfidf_d
+                        document_scores[doc["id"]] += tfidf_t_d * tfidf_t_q
+
+            for doc_id in document_scores:
+                document_scores[doc_id] /= norm_q
+
+            sorted_documents = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
+
+            sorted_documents_with_freq = []
+            for doc_id, score in sorted_documents:
+                doc_freq = sum(1 for term in query_tf if any(doc["id"] == doc_id and term == doc["term"] for doc in inverted_index.get(term, [])))
+                sorted_documents_with_freq.append((doc_id, score, doc_freq))
+
+            sorted_documents_with_freq = sorted(sorted_documents_with_freq, key=lambda x: (x[1], x[2]), reverse=True)
+
+            return [{"id": doc_id, "score": score, "freq": freq} for doc_id, score, freq in sorted_documents_with_freq[:k]]
+
+    ''' 
     def cosine_score(self, query, lenguage, k):
         processed_query = self.process_query(query, lenguage)
         query_tf = {term: processed_query.count(term) for term in processed_query}
@@ -244,7 +281,7 @@ class TextRetrival:
         sorted_documents_with_freq = sorted(sorted_documents_with_freq, key=lambda x: (x[1], x[2]), reverse=True)
 
         return [{"id": doc_id, "score": score, "freq": freq} for doc_id, score, freq in sorted_documents_with_freq[:k]]
-    
+    '''
     def get_top_k(self, query, lenguage, k):
         relevant_docs_scores = self.cosine_score(query, lenguage, k)
         return [(doc['id'], doc['score']) for doc in relevant_docs_scores]
