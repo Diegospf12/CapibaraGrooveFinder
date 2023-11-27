@@ -32,10 +32,9 @@
 }
 
 .modal-content {
-  background-color: #fefefe;
+  background-color: #141414;
   margin: 15% auto;
   padding: 20px;
-  border: 1px solid #888;
   width: 80%;
 }
 
@@ -59,13 +58,14 @@ h2 {
     font-size: 50px;
     margin-bottom: 5px;
     margin-top: 30px;
+    color: white;
 }
 
 p {
   font-family: 'Arial', sans-serif; /* Cambia la fuente a Arial */
   font-size: 18px; /* Aumenta el tamaño de la fuente a 18px */
   line-height: 1.6; /* Aumenta el espacio entre las líneas para mejorar la legibilidad */
-  color: #333; /* Cambia el color del texto a un gris oscuro */
+  color: #A7A7A7;; /* Cambia el color del texto a un gris oscuro */
   text-align: justify; /* Alinea el texto a ambos márgenes */
   padding: 20px; /* Agrega un relleno alrededor del texto */
   margin-top: 5px;

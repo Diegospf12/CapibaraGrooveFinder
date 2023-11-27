@@ -6,42 +6,35 @@ from feature_extraction import feature_extraction
 from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
 def knn_search(query_vector, K):
-    # Conecta a la base de datos
+
     conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
 
-    # Obtiene todos los vectores de la base de datos
-    cur.execute("SELECT track_id, mfcc FROM songs")
+    cur.execute("SELECT track_id, mfcc FROM vectores")
     features = {row[0]: row[1] for row in cur.fetchall()}
 
-    # Calcular la distancia entre el vector de consulta y todos los vectores en features
     distances = [(audio_path, distance.euclidean(query_vector, feature_vector)) for audio_path, feature_vector in features.items()]
     
-    # Encontrar los K vectores más cercanos
     nearest_neighbors = heapq.nsmallest(K, distances, key=lambda x: x[1])
     
-    # Cierra la conexión a la base de datos
     cur.close()
     conn.close()
 
     return nearest_neighbors
 
+
 def range_search(query_vector, radius):
-    # Conecta a la base de datos
+
     conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
 
-    # Obtiene todos los vectores de la base de datos
     cur.execute("SELECT track_id, mfcc FROM songs")
     features = {row[0]: row[1] for row in cur.fetchall()}
 
-    # Calcular la distancia entre el vector de consulta y todos los vectores en features
     distances = [(audio_path, distance.euclidean(query_vector, feature_vector)) for audio_path, feature_vector in features.items()]
     
-    # Encontrar los vectores dentro del radio de búsqueda
     results = [item for item in distances if item[1] <= radius]
     
-    # Cierra la conexión a la base de datos
     cur.close()
     conn.close()
 

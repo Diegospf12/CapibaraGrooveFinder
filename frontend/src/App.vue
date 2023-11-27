@@ -1,5 +1,6 @@
 <template>
-  <div>
+  <div id="app">
+    <img class="centered-image" :src="require('@/assets/capibara_2.jpg')" alt="Descripción de la imagen">
     <SongBrowser />
     <!--form @submit.prevent="handleSubmit">
       <input type="file" accept=".wav" @change="handleFileChange" />
@@ -23,6 +24,9 @@ export default {
   components: {
     //SongCard,
     SongBrowser
+  },
+  mounted() {
+    document.body.style.backgroundColor = 'black';
   },
   data() {
     return {
@@ -74,3 +78,12 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.centered-image {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 20%; /* Ajusta este valor para cambiar el tamaño de la imagen */
+}
+</style>

@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
+from langcodes import Language
+import langid
 
 english = set(stopwords.words('english'))
 spanish = set(stopwords.words('spanish'))
@@ -54,7 +56,7 @@ class SPIMI:
         language = row[24]
         doc = ' '.join(str(item) for item in row)
         tokens = nltk.word_tokenize(doc)
-        texto_filtrado = [word for word in tokens if not word in stopwords_list and re.match("^[a-zA-Z]+$", word)]
+        texto_filtrado = [word for word in tokens if not word in stopwords_list and re.match("^[a-zA-ZÁÉÍÓÚáéíóúñÑ0-9]+$", word)]
         texto_filtrado = [stemmers.get(language, SnowballStemmer('english')).stem(w) for w in texto_filtrado]
         object["id"] = id
         object["terms"] = texto_filtrado
@@ -133,7 +135,7 @@ class SPIMI:
     def process_all(self):
         docs = []
         total_terms = 0
-        for index, row in data.iterrows():
+        for index, row in self.data.iterrows():
             doc = self.preprocess(row)
             total_terms += len(doc["terms"])
             docs.append(doc)
@@ -194,126 +196,100 @@ class TextRetrival:
         with open('global_index/block_0.json', 'r') as file:
             self.inverted_index = json.load(file)
 
-    def process_query(self,query):
+    def process_query(self,query, lenguage='es'):
         tokens = nltk.word_tokenize(query)
-        filtered_text = [stemmers['es'].stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-Z]+$", w)]
+        filtered_text = [stemmers.get(lenguage, SnowballStemmer('english')).stem(w) for w in tokens if not w in stopwords_list and re.match("^[a-zA-ZÁÉÍÓÚáéíóúñÑ0-9]+$", w)]
         return filtered_text
 
-    def cosine_score(self, query, k):
-        processed_query = self.process_query(query)
+        
+    def cosine_score(self, query, lenguage, k):
+        processed_query = self.process_query(query, lenguage)
         query_tf = {term: processed_query.count(term) for term in processed_query}
         norm_q = math.sqrt(sum(tf**2 for tf in query_tf.values()))
 
         document_scores = defaultdict(float)
-        for term, tf_q in query_tf.items():
-            for index_file in glob.glob('global_index/*.json'):
-                with open(index_file, 'r') as file:
-                    inverted_index = json.load(file)
-                    if term in inverted_index:
-                        df_t = len(inverted_index[term])
-                        tfidf_t_q = math.log1p(tf_q) * math.log(len(inverted_index) / df_t)
-                        for doc in inverted_index[term]:
-                            tfidf_t_d = math.log1p(doc["tf"]) * math.log(len(inverted_index) / df_t)
-                            document_scores[doc["id"]] += tfidf_t_d * tfidf_t_q
+
+        for index_file in glob.glob('global_index/*.json'):
+            with open(index_file, 'r') as file:
+                inverted_index = json.load(file)
+
+            for term, tf_q in query_tf.items():
+                if term in inverted_index:
+                    df_t = len(inverted_index[term])
+                    idf_t = math.log(len(inverted_index) / (1 + df_t))
+                    tfidf_t_q = (1 + math.log(tf_q)) * idf_t
+
+                    for doc in inverted_index[term]:
+                        tfidf_t_d = (1 + math.log(doc["tf"])) * idf_t
+                        document_scores[doc["id"]] += tfidf_t_d * tfidf_t_q
 
         for doc_id in document_scores:
             document_scores[doc_id] /= norm_q
 
+        try:
+            max_score = max(document_scores.values())
+        except ValueError:
+            max_score = 0
+        if max_score != 0:
+            for doc_id in document_scores:
+                document_scores[doc_id] /= max_score
+
         sorted_documents = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
-        return [{"id":doc_id, "score":score} for doc_id, score in sorted_documents[:k]]
+
+        sorted_documents_with_freq = []
+        for doc_id, score in sorted_documents:
+            doc_freq = sum(1 for term in query_tf if any(doc["id"] == doc_id and term == doc["term"] for doc in inverted_index.get(term, [])))
+            sorted_documents_with_freq.append((doc_id, score, doc_freq))
+
+        sorted_documents_with_freq = sorted(sorted_documents_with_freq, key=lambda x: (x[1], x[2]), reverse=True)
+
+        return [{"id": doc_id, "score": score, "freq": freq} for doc_id, score, freq in sorted_documents_with_freq[:k]]
     
-    def show_results(self, query, k, dataset):
+    def get_top_k(self, query, lenguage, k):
+        relevant_docs_scores = self.cosine_score(query, lenguage, k)
+        return [(doc['id'], doc['score']) for doc in relevant_docs_scores]
+
+    def show_results(self, query, lenguage, k, dataset):
         start_time = time.time()
-        relevant_doc_ids = [doc['id'] for doc in self.cosine_score(query, k)]
+        relevant_docs_scores = self.cosine_score(query, lenguage, k)
         end_time = time.time()
         elapsed_time = end_time - start_time
-        relevant_docs = dataset[dataset['track_id'].isin(relevant_doc_ids)]
-        print(relevant_docs)
-        print(elapsed_time)
 
-    def k_means(self, query, k, dataset):
-        start_time = time.time()
-        relevant_docs_scores = self.cosine_score(query, k)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-
-        relevant_doc_ids = [doc['id'] for doc in relevant_docs_scores]
-        relevant_docs = dataset[dataset['track_id'].isin(relevant_doc_ids)]
-        
-        # Convertir cada registro a una cadena y agregarlo a la lista
-        records_list = [str(record) for record in relevant_docs.values]
-
-        return elapsed_time, records_list    
-    
-
-    #-----------------------------#
-    def dict_query(self, query):
-        query= self.process_query(query)
-        query_tf = {term: query.count(term) for term in query}
-        return query_tf
-
-    def cosine_similarity(self, query_vector, doc_vectors, k):
-        similarities = {}
-        for doc_id, doc_vector in doc_vectors.items():
-            similarity = np.dot(query_vector, doc_vector) / (np.linalg.norm(query_vector) * np.linalg.norm(doc_vector))
-            similarities[doc_id] = similarity
-        # Ordenar los documentos por similitud
-        sorted_docs = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
-        # Seleccionar los k documentos más similares
-        top_k_docs = [{'id': doc_id, 'score': score} for doc_id, score in sorted_docs[:k]]
-        return top_k_docs
-
-    def build_document_vectors(self, query):
-        terms = []
-        files = os.listdir('global_index')
-        doc_vectors = {}  # Nuevo diccionario para almacenar los vectores de los documentos
-        for file in files:
-            with open(os.path.join('global_index', file), 'r') as f:
-                inverted_index = json.load(f)
-                terms.extend(inverted_index.keys())
-        terms.extend(query.keys())
-        terms = sorted(set(terms))
-        term_index = {term: index for index, term in enumerate(terms)}
-        for file in files:
-            with open(os.path.join('global_index', file), 'r') as f:
-                inverted_index = json.load(f)
-                for term, term_docs in inverted_index.items():  # Definir 'term' aquí
-                    for doc_info in term_docs:
-                        doc_id = doc_info['id']
-                        if doc_id not in doc_vectors:
-                            doc_vectors[doc_id] = np.zeros(len(terms))  # Inicializar el vector del documento
-                        tf = doc_info['tf']
-                        doc_vectors[doc_id][term_index[term]] = tf  # Actualizar el vector del documento
-        # Actualizar los vectores de los documentos para que tengan la misma longitud que los términos
-        for doc_id, vector in doc_vectors.items():
-            if len(vector) < len(terms):
-                doc_vectors[doc_id] = np.pad(vector, (0, len(terms) - len(vector)))
-        query_vector = np.zeros(len(terms))
-        for term, tf in query.items():
-            if term in term_index:
-                query_vector[term_index[term]] = tf
-        return doc_vectors, query_vector
-    
-    def show_top_k(self, query, k, dataset):
-        doc_vectors, query_vector = self.build_document_vectors(query)
-        top_k_docs = self.cosine_similarity(query_vector, doc_vectors, k)
-        for i, doc in enumerate(top_k_docs, 1):
+        print("Results:")
+        for doc in relevant_docs_scores:
             doc_id = doc['id']
             score = doc['score']
+            freq = doc['freq']
             doc_data = dataset[dataset['track_id'] == doc_id]
-
+            print(f"Document ID: {doc_id}, Score: {score}, Frequency: {freq}")
+            
+            # Imprimir el score en la consola
+            print(f"Score: {score}")
+            
             print(doc_data)
-            print(f"Score: {score}\n")
+            print("------")
+
+        print(f"\nElapsed Time: {elapsed_time} seconds") 
 
 
+def obtener_abreviatura_idioma(texto):
+    idioma_detectado, _ = langid.classify(texto)
+    return Language.get(idioma_detectado).language
+
+
+"""
 if __name__ == "__main__":
     data = LoadData('spotify_songs.csv').get_data()
-    spimi = SPIMI(data)
+    #spimi = SPIMI(data)
     #spimi.spimi_invert()
 
     text_retrival = TextRetrival()
-    query = "la beca de kevin"
+    query = "rosalía"
     k = 10
-    
-    text_retrival.show_results(query, k, data)
-    #text_retrival.show_top_k(text_retrival.dict_query(query), k, data)
+    lenguage = obtener_abreviatura_idioma(query)
+
+    print(lenguage)
+    print("Results for Query:", query)
+
+    text_retrival.show_results(query, lenguage , k, data)
+"""

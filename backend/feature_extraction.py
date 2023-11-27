@@ -11,40 +11,31 @@ from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
 # Función para extraer características MFCC
 def feature_extraction(file_path):
-    # Cargar el archivo de audio
     with wave.open(file_path, 'rb') as wave_file:
         sample_rate = wave_file.getframerate()
         data = np.frombuffer(wave_file.readframes(wave_file.getnframes()), dtype=np.int16)
 
-    # Si los datos están vacíos, retornar None
     if data.size == 0:
         return None
     
-    # Convertir los datos a punto flotante
     data = data.astype(np.float32)
     
-    # Extraer las características MFCC
     mfcc = np.mean(librosa.feature.mfcc(y=data, sr=sample_rate, n_mfcc=50).T, axis=0)
     
     return mfcc
 
 
 def query_feature_extraction(audio_data: bytes):
-    # Crea un archivo temporal
     with tempfile.NamedTemporaryFile(delete=True) as temp_audio:
-        # Escribe los datos de audio en el archivo temporal
         temp_audio.write(audio_data)
         temp_audio.flush()
 
-        # Abre el archivo temporal con wave.open
         with wave.open(temp_audio.name, 'rb') as wave_file:
             sample_rate = wave_file.getframerate()
             data = np.frombuffer(wave_file.readframes(wave_file.getnframes()), dtype=np.int16)
     
-        # Convertir los datos a punto flotante
         data = data.astype(np.float32)
     
-        # Extraer las características MFCC
         mfcc = np.mean(librosa.feature.mfcc(y=data, sr=sample_rate, n_mfcc=50).T, axis=0)
     
         return mfcc
