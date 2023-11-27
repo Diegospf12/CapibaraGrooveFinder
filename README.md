@@ -10,15 +10,17 @@ Proyecto 2 del curso de Base de datos 2. Construcción del índice invertido tex
 <details open>
   <summary><h2>Tabla de contenidos:<h2></summary>
   <ul>
-    <li><a href="#Introducción-🖊">Introducción
+    <li><a href="#Introducción-🖊">Introducción 🖊
       <ul>
         <li><a href="#objetivo-del-proyecto">Objetivo del proyecto</a></li>
         <li><a href="#Dominio-de-datos">Dominio de datos</a></li>
+        <li><a href="#Importacia-de-aplicar-indexación">Importancia de aplicar indexación</a></li>
       </ul>
     </a></li> 
     <li><a href="#Estructura-del-proyecto">Estructura del proyecto</a></li>
+    <li><a href="#Backend-(Índice-Invertido)">Backend (Índice Invertido)</a></li>
+    <li><a href="#Backend-(Índice-Multidimensional)">Backend (Índice Multidimensional)</a></li>
     <li><a href="#Frontend-(GUI)">Frontend (GUI)</a></li>
-    <li><a href="#Backend-(SPIMI)">Backend (SPIMI)</a></li>
     <li><a href="#¿Cómo-se-construye-el-índice-invertido-en-PostgreSQL?">¿Cómo se construye el índice invertido en PostgreSQL?</a></li>
     <li><a href="#Experimentación">Experimentación</a></li>
     <li><a href="#conclusiones">Conclusiones</a></li>
@@ -28,13 +30,28 @@ Proyecto 2 del curso de Base de datos 2. Construcción del índice invertido tex
 <hr>
 
 # Introducción
+
+## Índice invertido textual
 El índice invertido es una estructura de datos utilizada en motores de búsqueda y sistemas de recuperación de información. Consiste en un diccionario que mapea términos a una lista de documentos en los que aparecen esos términos. Esta estructura permite una búsqueda eficiente de documentos que contengan ciertos términos clave. 
 
-## Objetivo del proyecto
-El presente proyecto tiene como objetivo desarrollar esta estructura de datos de manera eficiente, con motivo de realizar búsquedas rápidas en un conjunto de documentos.
+## Índice multidimensional
+Un índice multidimensional es una estructura de datos que permite organizar y acceder a información en múltiples dimensiones. Se utiliza para representar y buscar datos que tienen múltiples atributos o características.
 
-# Dominio de datos
+## Objetivo del proyecto
+El presente proyecto tiene como objetivo desarrollar estas estructuras de datos de manera eficiente, con motivo de realizar búsquedas rápidas en un conjunto de documentos.
+Con respecto al índice invertido textual, se utiliza para asociar términos de consulta con los documentos que los contienen ya que mejora la velocidad y precisión del retorno de información, lo que facilita la recuperación eficiente de documentos relevantes en función de los términos de búsqueda.
+En cuanto al índice multidimensional, se utilizar para representar características tanto de texto como de audio, lo que permite realizar consultas que involucren múltiples dimensiones, como la similitud de texto y audio en función de diferentes atributos.
+
+## Dominio de datos
 La base de datos utilizada es la Fashion Product Images. Esta contiene alrededor de 44 mil productos etiquetados por ID, categoría, género, color, año, etc.
+
+## Importancia de aplicar indexación
+La indexación es fundamental por las siguientes razones:
+1. Recuperación eficiente de información: La indexación permite realizar búsquedas rápidas en grandes conjuntos de datos, lo que es esencial para la recuperación eficiente de documentos relevantes en función de consultas de texto y audio.
+
+2. Optimización de consultas: Al indexar los datos, se pueden optimizar las consultas para que se ejecuten de manera más eficiente, lo que es crucial para aplicaciones en tiempo real, como la recuperación de información en sistemas de búsqueda.
+
+3. Reducción de la complejidad computacional: La indexación puede reducir la complejidad computacional de las operaciones de búsqueda y análisis de datos, lo que es importante para garantizar un rendimiento óptimo del sistema, especialmente en aplicaciones que manejan grandes volúmenes de información.
 
 # Estructura del proyecto
 El algoritmo SPIMI (Single-Pass In-Memory Indexing) es un método utilizado para construir un índice invertido durante el proceso de indexación de grandes conjuntos de datos. A diferencia de algunos algoritmos de indexación que requieren múltiples pasadas sobre los datos, SPIMI realiza la construcción del índice en una sola pasada a través de los datos.
@@ -45,14 +62,8 @@ Se calcula una sola vez la longitud de cada documento, y se lee el documento de 
 
 ![spimi2](https://github.com/marceloZS/Full-Text-Search_Project2/blob/main/imagenes/spimi2.jpeg)
 
-# Frontend (GUI)
 
-![[imagen del front]](https://github.com/marceloZS/Full-Text-Search_Project2/blob/main/imagenes/imagen_front_principal.png)
-![[capybara logo]](https://github.com/marceloZS/Full-Text-Search_Project2/blob/main/imagenes/logo.png)
-
-¿Cómo se utiliza la GUI?
-Dentro de la carpeta frontend se ejecuta el archivo main.py, este desplegara una ventana en la cual se puede crear un usuario o inciar sesion. Posteriormente en la ventana principal podras realizar la busqueda ingresando una busqueda textual y el numero que se desea. en la lista inferior apareceran los resultados y a su vez se mostrara el tiempo que tardo y el total de resultados que se retornan al realizar la consulta.
-# Backend (SPIMI)
+# Backend (Índice Invertido)
 El archivo inverted_index.py contiene la implementación del índice invertido utilizando el algoritmo SPIMI (Single-Pass In-Memory Indexing). El algoritmo SPIMI divide el proceso de indexación en bloques más pequeños para manejar grandes volúmenes de datos de manera eficiente.
 
 El código incluye las siguientes funciones principales:
@@ -158,7 +169,11 @@ Explicar código de merge blocks
 
 
 
-# ¿Cómo se construye el índice invertido en PostgreSQL?
+## Ejecución óptima de consultas aplicando similitud de coseno
+
+
+
+## ¿Cómo se construye el índice invertido en PostgreSQL?
 
 A grandes rasgos, para la construcción del índice invertido en PostgreSQL se necesitan 3 tablas principales.
 - Una tabla para almacenar los documentos
@@ -184,6 +199,31 @@ JOIN terms t ON lower(d.content) LIKE '%' || t.term || '%';
 Una vez que se han extraído los términos y se ha creado la tabla de relación, se pueden crear índices en las columnas relevantes para mejorar el rendimiento de las consultas de búsqueda. Por lo general, se crean índices en las columnas de términos y en las columnas de identificadores de documentos para acelerar las búsquedas.
 
 Con el índice invertido ya construído se pueden realizar consultas de búsqueda utilizando cláusulas SQL como WHERE y JOIN. Estas consultas aprovechan los índices para buscar rápidamente los documentos que contienen los términos de búsqueda especificados. Por tal motivo, las búsquedas de texto se vuelven más eficientes, ya que se evita la necesidad de realizar exploraciones completas de los documentos.
+
+# Backend (Índice Multidimensional)
+
+
+
+## KNN Secuencial: Priority Queue Search y Range Search
+
+
+
+## KNN RTree
+
+
+
+## KNN High D: Mitigación de la dimensionalidad con FAISS
+
+
+
+# Frontend (GUI)
+
+## Screenshots de la UI
+![[imagen del front]](https://github.com/marceloZS/Full-Text-Search_Project2/blob/main/imagenes/imagen_front_principal.png)
+![[capybara logo]](https://github.com/marceloZS/Full-Text-Search_Project2/blob/main/imagenes/logo.png)
+
+## ¿Cómo se utiliza la GUI?
+Dentro de la carpeta frontend se ejecuta el archivo main.py, este desplegara una ventana en la cual se puede crear un usuario o inciar sesion. Posteriormente en la ventana principal podras realizar la busqueda ingresando una busqueda textual y el numero que se desea. en la lista inferior apareceran los resultados y a su vez se mostrara el tiempo que tardo y el total de resultados que se retornan al realizar la consulta.
 
 # Experimentación
 
