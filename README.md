@@ -306,9 +306,11 @@ Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de o
 
 
 ### Análisis y Discusión
-- Podemos notar que el la búsqueda KNN con un RTree es la que menos tiempo demora, esto se debe a que a la hora de indexar los vectores, estos se transforman a un vector en 2D, por lo que a la hora de hacer una búsqueda el tiempo computacional será menor a comparación de la búsqueda secuencial y con el índice IVFFlat, los cualés hacen una búsqueda en 50D.
+- Se puede ver que el índice IVFFlat de Faiss es el método más óptimo para la búsqueda por similitud ya que es el que mejor se mantiene mientras más vectores aparecen en la colección.
 
-- El tiempo de la búsqueda secuencial va incrementando mucho a medida que se va incrementando la cantidad de vectores en la colección, por lo que podemos notar que a la hora de búsquedas en altas dimensiones, el índice IVFFlat será más óptimo.
+- La búsqueda KNN con Rtree empieza siendo la mejor cuando hay pocos vectores, pero a medida que la cantidad de vectores van incrementando, se va haciendo más ineficiente.
+
+- La búsqueda secuencial es la menos eficiente de todas, se puede notar que su crecimiento a medida que van apareciendo más vectores es exponencial.
 
 - Nuestra implementación de índice invertido a la hora de hacer el filtrado pierda algunos términos ya que estos pueden estar concatenados con símbolos raros (".!-) y esto puede ocacionar que la búsqueda de ciertos documentos que contienen estas palabras no sean exactos.
 
