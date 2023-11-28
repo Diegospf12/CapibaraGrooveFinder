@@ -296,6 +296,9 @@ Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de o
 |12000 | 0.49926 ms | 0.026420 ms | 0.397190 ms |
 |16000 | 0.63667 ms | 0.035708 ms | 0.486560 ms |
 
+### Gráfico comparativo de tiempos
+
+![graph2](https://github.com/marceloZS/Full-Text-Search_Project2/blob/main/imagenes/grafico_comparativo_2.png)
 
 
 ### Análisis y Discusión
