@@ -43,7 +43,35 @@ Con respecto al índice invertido textual, se utiliza para asociar términos de 
 En cuanto al índice multidimensional, se utilizar para representar características tanto de texto como de audio, lo que permite realizar consultas que involucren múltiples dimensiones, como la similitud de texto y audio en función de diferentes atributos.
 
 ## Dominio de datos
-La base de datos utilizada es la Fashion Product Images. Esta contiene alrededor de 44 mil productos etiquetados por ID, categoría, género, color, año, etc.
+La base de datos utilizada es la Audio features and lyrics of Spotify songs, con al rededor de 18000 canciones con los campos:
+
+|    **Campo**    |
+|:---------------:|
+| ```track_id```        | 
+| ```track_name```  | 
+| ```track_artist``` | 
+| ```lyrics``` | 
+| ```track_popularity``` | 
+| ```track_album_id``` |
+| ```track_album_name``` | 
+| ```track_album_release_date``` |
+| ```playlist_name``` |
+| ```playlist_id``` |
+| ```playlist_genre``` |
+| ```playlist_subgenre``` |
+| ```danceability``` |
+| ```enery``` | 
+| ```key``` | 
+| ```loudness``` | 
+| ```mode``` | 
+| ```speechness``` | 
+| ```acousticness``` | 
+| ```instrumentalness``` | 
+| ```liveness``` |
+| ```valence``` |
+| ```tempo``` |
+| ```duration_ms``` |
+| ```language``` |
 
 ## Importancia de aplicar indexación
 La indexación es fundamental por las siguientes razones:
