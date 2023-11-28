@@ -291,14 +291,14 @@ Por otro lado, hemos utilizado PostgreSQL con sus propios índices invertidos pa
 
 Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de objetos de tamaño N y comparamos la eficiencia en función del tiempo de ejecución
 
-|  k=8    | Secuencial |  KNN-RTree  |  KNN-HighD  |
+|  k=8 | Secuencial |  KNN-RTree  |  KNN-HighD  |
 |------|------------|-------------|-------------|
-| 1000 | 0.05100 ms | 0.001276 ms | 0.053848 ms |
-| 2000 | 0.08857 ms | 0.002307 ms | 0.087420 ms |
-| 4000 | 0.16724 ms | 0.006453 ms | 0.155970 ms |
-| 8000 | 0.28190 ms | 0.015350 ms | 0.256640 ms |
-|12000 | 0.49926 ms | 0.026420 ms | 0.397190 ms |
-|16000 | 0.63667 ms | 0.035708 ms | 0.486560 ms |
+| 1000 | 0.02148 ms | 0.001276 ms | 0.011387 ms |
+| 2000 | 0.03314 ms | 0.002307 ms | 0.013839 ms |
+| 4000 | 0.04983 ms | 0.006453 ms | 0.013992 ms |
+| 8000 | 0.09919 ms | 0.015350 ms | 0.015020 ms |
+|12000 | 0.16726 ms | 0.026420 ms | 0.015874 ms |
+|16000 | 0.17850 ms | 0.035708 ms | 0.015996 ms |
 
 ### Gráfico comparativo de tiempos
 
