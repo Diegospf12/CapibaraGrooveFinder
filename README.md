@@ -298,7 +298,7 @@ Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de o
 
 ### Gráfico comparativo de tiempos
 
-![graph2](https://github.com/marceloZS/Full-Text-Search_Project2/blob/main/imagenes/grafico_comparativo_2.png)
+![graph2](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/grafico_comparativo_2.png)
 
 
 ### Análisis y Discusión
