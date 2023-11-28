@@ -1,4 +1,4 @@
-# Capibara Groove Findes
+# Capibara Groove Finder
 Proyecto 3 del curso de Base de datos 2. Construcción del índice invertido textual y multidimensional
 
 # Team - Group 5
