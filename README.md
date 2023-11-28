@@ -407,26 +407,21 @@ A grandes rasgos, para la construcción del índice invertido en PostgreSQL se n
 - Una tabla para almacenar los términos
 - Una tabla de relación entre términos y documentos
 
-A partir de esto, se requere extraer los términos de los documentos y almacenarlos en una tabla de términos. Por ejemplo, se tiene lo siguiente:
-```sql
-INSERT INTO terms (term)
-SELECT DISTINCT unnest(string_to_array(lower(content), ' ')) AS term
-FROM documents;
+Hay dos tipos de índices en PostgreSQL:
+- GIN (Generalized Inverted Index): Es un tipo de índice que se utiliza para indexar conjuntos de elementos que no son necesariamente únicos, como conjuntos, matrices y listas. Es especialmente útil para búsquedas de texto, búsqueda de patrones y búsquedas de conjuntos.
+
+- GIST (Generalized Search Tree): Es un tipo de índice que puede manejar una amplia gama de tipos de datos y operadores. Se utiliza para indexar datos que no se ajustan bien a las estructuras de índice tradicionales, como datos geométricos, de red y de texto.
+
+Por tal motivo, conviene más utilizar el GIN en el contexto de este proyecto.
+
+Los pasos para crear un índice GIN (Generalized Inverted Index):
+1. Definir la estructura de datos que se indexará con el índice GIN, como conjuntos, matrices o listas.
+2. Crear el índice GIN utilizando la sentencia CREATE INDEX con la opción USING GIN y especificando las columnas o la expresión que se indexarán.
+
+Muestra:
+```python
+CREATE INDEX idx_gin ON tabla USING GIN (columna);
 ```
-
-La función string_to_array se utiliza para dividir el contenido de los documentos en términos individuales, y la función unnest se utiliza para convertir el resultado en filas individuales.
-
-Lo siguiente es armar la relación entre los documentos y términos. Esto se puede lograr utilizando consultas SQL que identifiquen los términos que aparecen en cada documento y los almacenen en la tabla de relación. Por ejemplo:
-```sql
-INSERT INTO document_term (document_id, term)
-SELECT d.id, t.term
-FROM documents d
-JOIN terms t ON lower(d.content) LIKE '%' || t.term || '%';
-```
-Una vez que se han extraído los términos y se ha creado la tabla de relación, se pueden crear índices en las columnas relevantes para mejorar el rendimiento de las consultas de búsqueda. Por lo general, se crean índices en las columnas de términos y en las columnas de identificadores de documentos para acelerar las búsquedas.
-
-Con el índice invertido ya construído se pueden realizar consultas de búsqueda utilizando cláusulas SQL como WHERE y JOIN. Estas consultas aprovechan los índices para buscar rápidamente los documentos que contienen los términos de búsqueda especificados. Por tal motivo, las búsquedas de texto se vuelven más eficientes, ya que se evita la necesidad de realizar exploraciones completas de los documentos.
-
 
 # Backend (Índice Multidimensional)
 - Extracción de características: 
