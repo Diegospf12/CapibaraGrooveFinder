@@ -287,7 +287,7 @@ Por otro lado, hemos utilizado PostgreSQL con sus propios índices invertidos pa
 
 Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de objetos de tamaño N y comparamos la eficiencia en función del tiempo de ejecución
 
-|      | Secuencial |  KNN-RTree  |  KNN-HighD  |
+|  k=8    | Secuencial |  KNN-RTree  |  KNN-HighD  |
 |------|------------|-------------|-------------|
 | 1000 | 0.05100 ms | 0.001276 ms | 0.053848 ms |
 | 2000 | 0.08857 ms | 0.002307 ms | 0.087420 ms |
@@ -298,8 +298,13 @@ Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de o
 
 
 
-### Discusión
+### Análisis y Discusión
+- Podemos notar que el la búsqueda KNN con un RTree es la que menos tiempo demora, esto se debe a que a la hora de indexar los vectores, estos se transforman a un vector en 2D, por lo que a la hora de hacer una búsqueda el tiempo computacional será menor a comparación de la búsqueda secuencial y con el índice IVFFlat, los cualés hacen una búsqueda en 50D.
+
+- El tiempo de la búsqueda secuencial va incrementando mucho a medida que se va incrementando la cantidad de vectores en la colección, por lo que podemos notar que a la hora de búsquedas en altas dimensiones, el índice IVFFlat será más óptimo.
+
+- Nuestra implementación de índice invertido a la hora de hacer el filtrado pierda algunos términos ya que estos pueden estar concatenados con símbolos raros (".!-) y esto puede ocacionar que la búsqueda de ciertos documentos que contienen estas palabras no sean exactos.
 
 ### Conclusión
 
-Los resultados de nuestra comparación indican que PostgreSQL supera ligeramente a nuestra implementación personalizada de índice invertido en términos de rendimiento en la mayoría de los escenarios. Aunque nuestra implementación es eficiente, PostgreSQL, con su optimización interna y capacidad para manejar grandes conjuntos de datos, muestra tiempos de búsqueda ligeramente más bajos en las pruebas.
+Los resultados de nuestra comparación indican que PostgreSQL supera ligeramente a nuestra implementación personalizada de índice invertido en términos de rendimiento en la mayoría de los escenarios. Aunque nuestra implementación es eficiente, PostgreSQL, con su optimización interna y capacidad para manejar grandes conjuntos de datos, muestra tiempos de búsqueda ligeramente más bajos en las pruebas. Por otro lado a la hora de búsqueda por similitud de audio, podemos darnos cuenta que la mejor opción fue el Índice IVFFlat de Faiss ya que esye divide los audios por clústers, para asi reducir la cantidad de comparaciones.
