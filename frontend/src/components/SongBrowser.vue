@@ -45,7 +45,7 @@
     <div class='h-8 w-8 bg-black rounded-full animate-bounce'></div>
   </div>
 
-  <p v-if="time" class="execution-time"> Tiempo de ejecución: {{ time }} ms </p>
+  <p v-if="time && !isSearching" class="execution-time"> Tiempo de ejecución: {{ time }} ms </p>
 
   <transition-group name="fade" tag="div">
     <div v-for="(track, index) in tracks" :key="track.id" class="song-card-container"
