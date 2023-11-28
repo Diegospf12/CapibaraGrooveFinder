@@ -186,23 +186,23 @@ def spimi_invert(self):
     
 
 ```python
-			for i in docs:
-			    doc = i
-			    for term in doc["terms"]:
-			        if term not in local_index:
-			            local_index[term] = [{"id": doc["id"], "tf": 1}]
-			        else:
-			            # Comprueba si el id del documento ya existe para este término
-			            doc_found = False
-			            for doc_i in local_index[term]:
-			                if doc_i["id"] == doc["id"]:
-			                    doc_i["tf"] += 1
-			                    doc_found = True
-			                    break
-			            if not doc_found:
-			                # Si el id del documento no se encuentra después de la iteración completa, agrega un nuevo documento
-			                local_index[term].append({"id": doc["id"], "tf": 1})
-			        terms_processed += 1
+	for i in docs:
+	    doc = i
+	    for term in doc["terms"]:
+		if term not in local_index:
+		    local_index[term] = [{"id": doc["id"], "tf": 1}]
+		else:
+		    # Comprueba si el id del documento ya existe para este término
+		    doc_found = False
+		    for doc_i in local_index[term]:
+			if doc_i["id"] == doc["id"]:
+			    doc_i["tf"] += 1
+			    doc_found = True
+			    break
+		    if not doc_found:
+			# Si el id del documento no se encuentra después de la iteración completa, agrega un nuevo documento
+			local_index[term].append({"id": doc["id"], "tf": 1})
+		terms_processed += 1
 ```
 
 Construimos un índice invertido en RAM llamado `local_index` a partir de una lista de documentos. El índice almacena los términos presentes en los documentos y para cada término, mantiene una lista de documentos asociados con su respectivo contador de frecuencia. Si un término ya está presente en el índice, se actualiza el contador de frecuencia para el documento correspondiente. Si el término no está presente, se agrega una nueva entrada en el índice con el documento y su contador de frecuencia inicializado en 1.
