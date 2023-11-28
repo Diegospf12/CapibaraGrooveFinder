@@ -66,112 +66,358 @@ Se calcula una sola vez la longitud de cada documento, y se lee el documento de 
 # Backend (Índice Invertido)
 El archivo inverted_index.py contiene la implementación del índice invertido utilizando el algoritmo SPIMI (Single-Pass In-Memory Indexing). El algoritmo SPIMI divide el proceso de indexación en bloques más pequeños para manejar grandes volúmenes de datos de manera eficiente.
 
-El código incluye las siguientes funciones principales:
-
-1. spimi_invert(): Esta función realiza la indexación de los documentos presentes en una carpeta de entrada. Utiliza el algoritmo SPIMI para generar el índice invertido.
-
-2. binary_search_term_blocks(): Esta función realiza una búsqueda binaria en los bloques del índice invertido para encontrar un término específico. Utiliza una implementación eficiente de búsqueda binaria para mejorar el rendimiento de la búsqueda.
-
-3. cosine_similarity(): Esta función calcula la similitud de coseno entre una consulta y los documentos indexados. Utiliza el índice invertido y los pesos TF-IDF para calcular la similitud de coseno.
-
-## 1. MÉTODO SPIMI INVERT()
+## Construcción del índice invertido en memoria secundaria
 
 ```python
 
 def spimi_invert(self):
-        documents = os.listdir(self.input_folder)
-        documents_count = len(documents)
-        documents_counter = 0
-        block_number = 0
+    docs, total_terms = self.process_all()
+    block_number = 0
+    terms_processed = 0
+    total_blocks = self.calcular_bloques(total_terms)
+    terms_processed_per_block = math.ceil(total_terms/total_blocks)
+    local_index = {}
+    
+    for i in docs:
+        doc = i
+        for term in doc["terms"]:
+            if term not in local_index:
+                local_index[term] = [{"id": doc["id"], "tf": 1}]
+            else:
+                # Comprueba si el id del documento ya existe para este término
+                doc_found = False
+                for doc_i in local_index[term]:
+                    if doc_i["id"] == doc["id"]:
+                        doc_i["tf"] += 1
+                        doc_found = True
+                        break
+                if not doc_found:
+                    # Si el id del documento no se encuentra después de la iteración completa, agrega un nuevo documento
+                    local_index[term].append({"id": doc["id"], "tf": 1})
+            terms_processed += 1
+            if(terms_processed >= terms_processed_per_block):
+                sorted_dictionary = collections.OrderedDict(sorted(local_index.items()))
+                os.makedirs('local_indexes', exist_ok=True)
+                with open(f'local_indexes/block_{block_number}.json', 'w') as file:
+                    json.dump(sorted_dictionary, file)
+                local_index.clear()
+                block_number += 1
+                terms_processed = 0
 
-        for docID in documents:
-            if docID.endswith(".txt"):
-                documents_counter += 1
-                file_route = os.path.join(self.input_folder, docID)
-                file_content = open(file_route, encoding="utf-8").read().lower()
+    # Comprueba si quedan términos en el último bloque
+    if local_index:
+        sorted_dictionary = collections.OrderedDict(sorted(local_index.items()))
+        os.makedirs('local_indexes', exist_ok=True)
+        with open(f'local_indexes/block_{block_number}.json', 'w') as file:
+            json.dump(sorted_dictionary, file)
+    self.binary_merge(total_blocks)
 
 ```
 
-Leemos uno a uno de nuestros documentos no pre-procesados
+Iremos por partes:
 
 ```python
-                '''Pre-processing'''
-                # Tokenizamos nuestro txt
-                tokens = nltk.word_tokenize(file_content)
-                #Filtramos para que no pertenezca a los stopwords o no sea un valor no alfanumerico (Stopwords / Valores raros)
-                terms = [word for word in tokens if not word in TextPreprocessor.stopwords and re.match("^[a-zA-Z]+$", word)]
-                #Hacemos Stemming en el idioma respectivo
-                terms = [TextPreprocessor.stemmer.stem(w) for w in terms]
+def spimi_invert(self):
+    docs, total_terms = self.process_all()
+    block_number = 0
+    terms_processed = 0
+    total_blocks = self.calcular_bloques(total_terms)
+    terms_processed_per_block = math.ceil(total_terms/total_blocks)
+    local_index = {}
 ```
-Una vez obtenemos el documento no procesado:
-- Lo tokenizamos
-- Filtramos las Stopwords
-- Hacemos Stemming
+
+- `process_all()`
+    
+    ```python
+    def process_all(self):
+        docs = []
+        total_terms = 0
+        for index, row in data.iterrows():
+            doc = self.preprocess(row)
+            total_terms += len(doc["terms"]) #Se toman en cuenta los terminos incluso esten repetidos, ya que en el merge en el peor de los casos ninguno de los terminos se repite, por lo que el tamaño de cada bloque debería ser lo suficientemente grande para que quepan 2^n terminos 
+            docs.append(doc)
+        return docs, total_terms
+    ```
+    
+    - Itera cada uno de los documentos (rows) de nuestro csv (data textual)
+        - Las preprocesa:
+            - La tokeniza
+            - Elimina las stepwords
+            - Realiza Stemming
+            - Finalmente el output sería una lista con cada una de las palabras ya preprocesadas
+        - Agregamos en una variable la cantidad de términos en el documento.
+        - Finalmente agregamos nuestro documento a la lista de documentos.
+- `calcular_bloques(total_terms)`
+    
+    ```python
+    def calcular_bloques(self, total_terms):
+            total_bloques = total_terms // self.block_limit
+            bloques_potencia_de_dos = 1
+            while bloques_potencia_de_dos * 2 <= total_bloques:
+                bloques_potencia_de_dos *= 2
+            return bloques_potencia_de_dos
+    ```
+    
+    El parámetro `total_terms` representa el número total de términos. La función divide este número por el límite de bloques (`self.block_limit`) para determinar cuántos bloques se pueden crear. Luego, utiliza un bucle while para encontrar la potencia de dos más grande que sea menor o igual al número de bloques calculado anteriormente.
+    
+    Finalmente, la función devuelve el número de bloques que se pueden crear, que es la potencia de dos encontrada en el bucle while.
+    
 
 ```python
-                for term in terms:
+			for i in docs:
+			    doc = i
+			    for term in doc["terms"]:
+			        if term not in local_index:
+			            local_index[term] = [{"id": doc["id"], "tf": 1}]
+			        else:
+			            # Comprueba si el id del documento ya existe para este término
+			            doc_found = False
+			            for doc_i in local_index[term]:
+			                if doc_i["id"] == doc["id"]:
+			                    doc_i["tf"] += 1
+			                    doc_found = True
+			                    break
+			            if not doc_found:
+			                # Si el id del documento no se encuentra después de la iteración completa, agrega un nuevo documento
+			                local_index[term].append({"id": doc["id"], "tf": 1})
+			        terms_processed += 1
+```
 
-                    if (sys.getsizeof(term) + sys.getsizeof([docID]) + sys.getsizeof(self.dictionary) > self.block_size_limit):
-                        temp_dict = self.sort_terms()
-                        self.write_block_to_disk(temp_dict, block_number)
-                        temp_dict = {}
-                        block_number += 1
+Construimos un índice invertido en RAM llamado `local_index` a partir de una lista de documentos. El índice almacena los términos presentes en los documentos y para cada término, mantiene una lista de documentos asociados con su respectivo contador de frecuencia. Si un término ya está presente en el índice, se actualiza el contador de frecuencia para el documento correspondiente. Si el término no está presente, se agrega una nueva entrada en el índice con el documento y su contador de frecuencia inicializado en 1.
 
-                    if term not in self.dictionary:
-                        self.dictionary[term] = [docID]
+```python
+	#Dentro del for term in doc["terms"]:
+		        if(terms_processed >= terms_processed_per_block):
+		            sorted_dictionary = collections.OrderedDict(sorted(local_index.items()))
+		            os.makedirs('local_indexes', exist_ok=True)
+		            with open(f'local_indexes/block_{block_number}.json', 'w') as file:
+		                json.dump(sorted_dictionary, file)
+		            local_index.clear()
+		            block_number += 1
+		            terms_processed = 0
+```
+
+Esta parte del código se encarga de guardar los índices locales en archivos separados (Bloques) cuando se alcanza un cierto número de términos procesados. Esto ayuda a dividir el proceso de indexación en bloques más pequeños y facilita la gestión de los datos, permitiendo que la RAM no llegue a su capacidad máxima al almacenar el índice invertido local.
+
+```python
+#Fuera de for i in docs:
+    if local_index:
+        sorted_dictionary = collections.OrderedDict(sorted(local_index.items()))
+        os.makedirs('local_indexes', exist_ok=True)
+        with open(f'local_indexes/block_{block_number}.json', 'w') as file:
+            json.dump(sorted_dictionary, file)
+    self.binary_merge(total_blocks)
+```
+
+Verifica si el diccionario `local_index` no está vacío. Si no lo está, ordena el diccionario, crea un directorio si no existe, y guarda el diccionario ordenado en un archivo JSON (Bloque).
+
+Finalmente, ya que tenemos todos nuestros bloque llamamos a `binary_merge(total_blocks)`, que será explicado a continuación:
+
+```python
+def binary_merge(self, n_blocks):
+    total_blocks = n_blocks
+    merge_size = 1
+    step = 0
+    while merge_size < total_blocks:
+        curr_block = 0
+        while curr_block < total_blocks:
+            next_block = curr_block + merge_size
+            if next_block >= total_blocks:
+                next_block = curr_block
+                curr_block -= merge_size
+
+            folder_name = 'local_indexes' if step == 0 else f'Pasada_{step}'
+            with open(f'{folder_name}/block_{curr_block}.json', 'r') as file1:
+                index1 = json.load(file1)
+            with open(f'{folder_name}/block_{next_block}.json', 'r') as file2:
+                index2 = json.load(file2)
+
+            for key, value in index2.items():
+                if key in index1:
+                    index1[key].extend(value)
+                else:
+                    index1[key] = value
+
+            merged_dict = index1
+
+            os.makedirs(f'Pasada_{step+1}', exist_ok=True)
+            with open(f'Pasada_{step+1}/block_{curr_block}.json', 'w') as file:
+                json.dump(merged_dict, file)
+
+            curr_block += merge_size * 2
+
+        if step > 0:
+            shutil.rmtree(f'Pasada_{step}')
+
+        merge_size *= 2
+        step += 1
+
+    if step > 0:
+        with open(f'Pasada_{step}/block_0.json', 'r') as file:
+            global_index = json.load(file)
+        keys = sorted(global_index.keys())
+        block_size = len(keys) // n_blocks
+        for i in range(n_blocks):
+            if i == n_blocks - 1:
+                block_keys = keys[i*block_size:]
+            else:
+                block_keys = keys[i*block_size:(i+1)*block_size]
+            block_dict = {key: global_index[key] for key in block_keys}
+            os.makedirs('global_index', exist_ok=True)
+            with open(f'global_index/block_{i}.json', 'w') as file:
+                json.dump(block_dict, file)
+
+        shutil.rmtree(f'Pasada_{step}')
+```
+
+1. Inicialización de Variables:
+    - **`total_blocks`**: Representa el número total de bloques que se fusionarán.
+    - **`merge_size`**: Representa el tamaño de la fusión actual.
+    - **`step`**: Representa la etapa actual del proceso de fusión.
+2. Bucle Principal:
+    - La fusión se realiza en varios niveles (etapas). En cada nivel, los bloques se fusionan en pares hasta que se obtiene un solo bloque.
+    - En cada nivel, se duplica el tamaño de la fusión (**`merge_size *= 2`**).
+    - En cada nivel, se realiza un bucle para fusionar los bloques actuales (**`curr_block`**) y los bloques adyacentes (**`next_block`**).
+3. Fusión de Bloques:
+    - Se abren los archivos JSON correspondientes a los bloques actuales y siguientes.
+    - Se cargan los índices invertidos de los bloques en las variables **`index1`** e **`index2`**.
+    - Se fusionan los índices combinando las listas de posteo para las mismas claves.
+    - El resultado de la fusión se guarda en **`merged_dict`**.
+4. Almacenamiento del Resultado de Fusión:
+    - Se crea un nuevo directorio (**`Pasada_{step+1}`**) para almacenar los resultados de la fusión actual.
+    - Se guarda el índice fusionado en un archivo JSON correspondiente al bloque actual.
+5. Actualización de Variables:
+    - Se actualiza **`curr_block`** para apuntar al siguiente par de bloques a fusionar.
+    - El proceso se repite hasta que se han fusionado todos los bloques en un solo bloque.
+6. Limpieza de Archivos Temporales:
+    - Después de cada nivel de fusión, se elimina el directorio de la etapa anterior para liberar espacio.
+7. Generación del Índice Global:
+    - Después de la última fusión, se crea el índice global combinando los bloques resultantes en un solo índice invertido.
+8. Almacenamiento del Índice Global:
+    - El índice global se almacena en archivos JSON separados para cada bloque en el directorio **`global_index`**.
+9. Limpieza Final:
+    - Se eliminan los archivos temporales y directorios intermedios.
+
+## Ejecución óptima de consultas aplicando Similitud de Coseno
+
+```python
+def dict_query(self, query):
+    query= self.process_query(query)
+    query_tf = {term: query.count(term) for term in query}
+    return query_tf
+```
+
+- La función **`process_query`** (que no está proporcionada en el código) se utiliza para preprocesar la consulta.
+- La consulta se convierte en un diccionario donde las claves son los términos y los valores son las frecuencias de cada término en la consulta.
+
+```python
+def cosine_similarity(self, query_vector, doc_vectors, k):
+    similarities = {}
+    for doc_id, doc_vector in doc_vectors.items():
+        doc_norm = np.linalg.norm(doc_vector)
+        if doc_norm == 0:
+            similarity =0
+        else:
+            similarity = np.dot(query_vector, doc_vector) / (np.linalg.norm(query_vector) * doc_norm)
+
+        similarities[doc_id] = similarity
+    # Ordenar los documentos por similitud
+    sorted_docs = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
+    # Seleccionar los k documentos más similares
+    top_k_docs = [{'id': doc_id, 'score': score} for doc_id, score in sorted_docs[:k]]
+    return top_k_docs
+```
+
+- Calcula la similitud coseno entre el vector de consulta y cada vector de documento.
+- Los resultados se almacenan en un diccionario **`similarities`**, que se ordena según las puntuaciones de similitud en orden descendente.
+- Se seleccionan los primeros k documentos más similares y se devuelven en un formato específico.
+
+```python
+def build_document_vectors(self, query):
+    terms = list(set())
+    files = os.listdir('global_index')
+    doc_vectors = {}  # Nuevo diccionario para almacenar los vectores de los documentos
+    for file in files:
+        with open(os.path.join('global_index', file), 'r') as f:
+            inverted_index = json.load(f)
+            if inverted_index:
+                if inverted_index:
+                    if isinstance( inverted_index, list):
+                        terms.update([item['term'] for w in inverted_index for item in w])
                     else:
-                        self.dictionary[term].append(docID)
-
-                if sys.getsizeof(self.dictionary) > self.block_size_limit or (documents_counter == documents_count - 1):
-                    temp_dict = self.sort_terms()
-                    self.write_block_to_disk(temp_dict, block_number)
-                    temp_dict = {}
-                    block_number += 1
+                        terms.update(inverted_index.keys())
+    terms = list(terms)
+    terms.extend(query.keys())
+    terms = sorted(set(terms))
+    term_index = {term: index for index, term in enumerate(terms)}
+    for file in files:
+        with open(os.path.join('global_index', file), 'r') as f:
+            inverted_index = json.load(f)
+            for term, term_docs in inverted_index.items():  # Definir 'term' aquí
+                for doc_info in term_docs:
+                    doc_id = doc_info['id']
+                    if doc_id not in doc_vectors:
+                        doc_vectors[doc_id] = np.zeros(len(terms))  # Inicializar el vector del documento
+                    tf = doc_info['tf']
+                    doc_vectors[doc_id][term_index[term]] = tf  # Actualizar el vector del documento
+    # Actualizar los vectores de los documentos para que tengan la misma longitud que los términos
+    for doc_id, vector in doc_vectors.items():
+        if len(vector) < len(terms):
+            doc_vectors[doc_id] = np.pad(vector, (0, len(terms) - len(vector)))
+    query_vector = np.zeros(len(terms))
+    for term, tf in query.items():
+        if term in inverted_index:
+            df_t = len(inverted_index[term])
+            if idf_t == 0:
+                df_t = 1
+            idf_t = math.log(len(inverted_index) / df_t)
+        if term in term_index:
+            query_vector[term_index[term]] = tf
+    return doc_vectors, query_vector
 ```
 
-Una vez ya pre-procesado el documento, leemos uno a uno los términos de este, y los vamos agregando al diccionario de la siguiente forma:
+1. **Obtención de Términos Únicos:**
+    - **`terms = list(set())`**: Se inicializa una lista vacía para almacenar términos únicos.
+    - Se obtienen los archivos en el directorio 'global_index' que contienen los índices invertidos de los documentos.
+    - Se recorre cada archivo y se carga el índice invertido de cada documento.
+2. **Actualización de Términos con Índice Invertido:**
+    - Se verifica si el índice invertido está presente y si es una lista.
+    - Si es una lista, se agregan los términos a la lista **`terms`** extrayendo el término de cada elemento en la lista.
+    - Si no es una lista, se asume que es un diccionario y se agregan las claves del diccionario a **`terms`**.
+3. **Manejo de Términos de Consulta:**
+    - Se agregan los términos presentes en la consulta (**`query.keys()`**) a la lista de términos (**`terms`**).
+    - La lista de términos se ordena y se eliminan duplicados.
+4. **Creación del Índice de Términos:**
+    - Se crea un diccionario **`term_index`** donde las claves son los términos y los valores son los índices correspondientes en el vector.
+5. **Construcción de Vectores de Documentos:**
+    - Se recorren nuevamente los archivos de índice invertido.
+    - Para cada término en el índice invertido y sus documentos asociados, se actualiza el vector del documento (**`doc_vectors`**) con la frecuencia del término (**`tf`**) en ese documento.
+6. **Ajuste de Longitud de Vectores de Documentos:**
+    - Después de construir los vectores para todos los documentos, se verifica si algún vector es más corto que la longitud total de términos.
+    - Si es más corto, se agrega relleno (**`np.pad`**) para que todos los vectores tengan la misma longitud.
+7. **Construcción del Vector de Consulta:**
+    - Se inicializa un vector de ceros para la consulta (**`query_vector`**) con la misma longitud que la lista de términos.
+    - Se actualiza el vector de consulta con las frecuencias de términos presentes en la consulta.
+8. **Cálculo del IDF para la Consulta:**
+    - Para cada término en la consulta, se calcula el Inverse Document Frequency (IDF) utilizando la fórmula **`idf_t = math.log(len(inverted_index) / df_t)`**, donde **`df_t`** es la frecuencia documental del término.
+9. **Retorno de Resultados:**
+    - La función devuelve dos objetos: **`doc_vectors`**, un diccionario donde las claves son los ID de documentos y los valores son los vectores de documentos; y **`query_vector`**, el vector de la consulta.
 
 ```python
-diccionario = {'baron':['doc1278.txt', 'doc1299.txt'],
-        'zascuss':['doc1278.txt'],
-        'abbi': ['doc1299.txt'],
-        'abraim' : ['doc12081.txt']
-}
+def show_top_k(self, query, k, dataset):
+    doc_vectors, query_vector = self.build_document_vectors(query)
+    top_k_docs = self.cosine_similarity(query_vector, doc_vectors, k)
+    for i, doc in enumerate(top_k_docs, 1):
+        doc_id = doc['id']
+        score = doc['score']
+        doc_data = dataset[dataset['track_id'] == doc_id]
+        print(f"Top {i} Document:")
+        print(doc_data)
+        print(f"Score: {score}\n")
 ```
 
-Una vez este diccionario llegue al límite de RAM:
-
-- Ordenaremos este diccionario en orden alfabético (sort_terms(self))
-- y agregaremos su term frequency de la siguiente forma (sort_terms(self) llama al método calculate_tftd(self, pl_with_duplicates)):
-
-```python
-diccionario_temporal = {    'aaron':[['doc11987.txt', 1]],
-                            'abascuss':[['doc1278.txt', 1], ['doc1998.txt', 6]],
-                            'abbi':[['doc1299.txt', 2]],
-                            'abf':[['doc1156.txt', 3]],
-                            'abraim':[['doc12081.txt', 1]]  }
-```
-- Finalmente, este diccionario modificado lo cargamos a memoria secundaria con el método write_block_to_disk(self, term_postings_list, block_number), generando así un bloque (indice invertido local).
-
-**Una vez se hayan terminado de procesar todos los documentos, y con ello haber creado todos los bloques, mergearemos todos estos bloques para crear un indice invertido global repartido en los n bloques.**
-
-```python
-        print("BLOCKS creation complete!")
-        self.merge_blocks()
-```
-
-```python
-Insertar codigo de merge blocks
-
-
-```
-Explicar código de merge blocks
-
-
-
-## Ejecución óptima de consultas aplicando similitud de coseno
-
-
+- Utiliza las funciones anteriores para obtener los k documentos más similares a la consulta.
+- Imprime información sobre estos documentos, incluidos los datos del conjunto de datos y las puntuaciones de similitud.
 
 ## ¿Cómo se construye el índice invertido en PostgreSQL?
 
@@ -317,3 +563,8 @@ Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de o
 ### Conclusión
 
 Los resultados de nuestra comparación indican que PostgreSQL supera ligeramente a nuestra implementación personalizada de índice invertido en términos de rendimiento en la mayoría de los escenarios. Aunque nuestra implementación es eficiente, PostgreSQL, con su optimización interna y capacidad para manejar grandes conjuntos de datos, muestra tiempos de búsqueda ligeramente más bajos en las pruebas. Por otro lado a la hora de búsqueda por similitud de audio, podemos darnos cuenta que la mejor opción fue el Índice IVFFlat de Faiss ya que esye divide los audios por clústers, para asi reducir la cantidad de comparaciones.
+
+
+
+
+
