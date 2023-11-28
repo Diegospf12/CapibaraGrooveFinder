@@ -274,6 +274,7 @@ npm run serve
 |32000 |    333 ms      |  359 ms   |
 |64000 |    380 ms      |  360 ms   |
 
+
 ### Implementación de Índice Invertido
 
 Nuestra implementación personalizada de índice invertido ha demostrado ser eficiente en la búsqueda de datos basada en texto. Hemos medido el rendimiento de nuestra implementación en milisegundos para una variedad de tamaños de datos de prueba, desde 1,000 hasta 64,000 registros. 
@@ -281,6 +282,21 @@ Nuestra implementación personalizada de índice invertido ha demostrado ser efi
 ### PostgreSQL con Índice Invertido
 
 Por otro lado, hemos utilizado PostgreSQL con sus propios índices invertidos para realizar búsquedas de texto similares a nuestras pruebas con datos de prueba de tamaños comparables.
+
+## Tabla de resultados de índices multidimensionales
+
+Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de objetos de tamaño N y comparamos la eficiencia en función del tiempo de ejecución
+
+|      | Secuencial |  KNN-RTree  |  KNN-HighD  |
+|------|------------|-------------|-------------|
+| 1000 | 0.05100 ms | 0.001276 ms | 0.053848 ms |
+| 2000 | 0.08857 ms | 0.002307 ms | 0.087420 ms |
+| 4000 | 0.16724 ms | 0.006453 ms | 0.155970 ms |
+| 8000 | 0.28190 ms | 0.015350 ms | 0.256640 ms |
+|12000 | 0.49926 ms | 0.026420 ms | 0.397190 ms |
+|16000 | 0.63667 ms | 0.035708 ms | 0.486560 ms |
+
+
 
 ### Discusión
 
