@@ -1,5 +1,5 @@
-# Capibara Groove Finder
-Proyecto 3 del curso de Base de datos 2. Construcción del índice invertido textual y multidimensional
+# **Capibara Groove Finder**
+**Proyecto 2 & 3 del curso de Base de datos II. Construcción del índice invertido textual y multidimensional**
 
 # Team - Group 5
 | <a href="https://github.com/anamariaaccilio" target="_blank">**Ana Maria Accilio Villanueva**</a> | <a href="https://github.com/Diegospf12" target="_blank">**Diego Pacheco Ferrel**</a> | <a href="https://github.com/juanpedrovv" target="_blank">**Juan Pedro Vasquez Vilchez**</a> | <a href="https://github.com/LuisEnriqueCortijoGonzales" target="_blank">**Luis Enrique Cortijo Gonzales**</a> | <a href="https://github.com/marceloZS" target="_blank">**Marcelo Mario Zuloeta Salazar**</a> |
@@ -468,20 +468,124 @@ Una vez que se han extraído los términos y se ha creado la tabla de relación,
 
 Con el índice invertido ya construído se pueden realizar consultas de búsqueda utilizando cláusulas SQL como WHERE y JOIN. Estas consultas aprovechan los índices para buscar rápidamente los documentos que contienen los términos de búsqueda especificados. Por tal motivo, las búsquedas de texto se vuelven más eficientes, ya que se evita la necesidad de realizar exploraciones completas de los documentos.
 
+
 # Backend (Índice Multidimensional)
+- Extracción de características: 
+Los vectores de características se almacenan en una base de datos PostgreSQL. Donde se realiza una consulta a la tabla `vectores` de la base de datos, y los resultados se almacenan en el diccionario `features`, donde las claves son los identificadores de las pistas (track_id) y los valores son los vectores de características (mfcc).
+
+- Código para extraer características:
+
+```python
+query = feature_extraction("/Directory")
+query_vector = query
+
+```
+
+## KNN Secuencial: (Sin indexación)
+
+Para la búsqueda KNN-secuencial, no se implementó ninguna técnica con indexación por lo que no mejora la eficiencia en las búsquedas. El algoritmo evalúa los puntos de datos en el conjunto para encontrar los `k` vecinos más cercanos al punto de la consulta. En está técnica calculamos la similitud que al ser sin indexación conlleva una gran complejidad computacional. 
+Se implementó los siguientes algoritmos: `KnnSearch(Q, k)`, `RangeSearch(Q, r)` 
+
+![knn_search](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/f534b6b0-7b1b-4c5f-8f66-5d3ff1f27874)
+.png)
+
+- `KnnSearch(Q, k)`: Recibe el vector de consulta 'query_vector' y un entero 'k' que representa la cantidad de vecinos más cercanos a buscar. Se realiza la consutla a la base de datos para obtener los vectores característicos de audio, luego calculamos la distancia euclidiana entre el vector de consulta y todos los vectores en la base de datos. Utilizamos `heapq' para encontrar los 'k' elementos más pequeños. Al final devuelve la lista de tuplas, con el identificador de audio y la distancia euclidiana. 
+
+![KNN_RANGE](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/82ba852a-d2fb-4364-bced-6f10e3276f17)
 
 
 
-## KNN Secuencial: Priority Queue Search y Range Search
-
-
+- `Range_Search`: Al igual que el KnnSearch, recibe el vector de consulta 'query_vector' pero con el valor del radio 'radius'. Se realiza la búsqueda en la base de datos para obtener los vectores caracteristicos, se selecciona de la tabla 'songs'. Realiza el cálculo de la distancia euclidiana, filtra las distancias para incluir solo aquellos vectores que estan en el radio de búsqueda. Al final devuelve una lista de tuplas que contiene la distancia euclidiana y el 'track'.
 
 ## KNN RTree
 
+Para que la búsqueda sea más eficiente, hacemos uso del `RTree` como una libreria de índice espacial para indexar todos los vectores característicos. La búsqueda RTree en el KNN donde el rango es inicialmente infinito, luego se va reduciendo el rango según se van evaluando. 
+
+![R-Tree](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/a00a2664-b629-42ff-8a65-4f875f457963)
 
 
-## KNN High D: Mitigación de la dimensionalidad con FAISS
+- `KNN RTree`: 
 
+Ejecutamos una consulta SQL para obtener los identificadores de las pistas 'track_id' y sus vectroes caracteríticos 'mffcc' desde la tabla 'vectores'. Las caracteríticas se almancenan en el dict 'features'. Para la construcción del índice R-tree, utilizamos el módulo rtree para crear el índice, lo configuramos con la propiedad de 'p.dimension'. Se insertan los objetos en el índice RTree utlizandos los identificadores de las pistas y los vectores caracteríticos concatenados.
+La función `knn_search_rtree` va a recibir un vector de consulta 'query_vector' y un entro 'k' que representa la cantdiad de vecinos más cercanos. Calculamos la distancia euclidiana entre el vector de consulta y los objetos encontrados en el índice. Al final devolvemos una lista de tuplas, donde cada tupla contiene el identificador del audio y la distancia euclidiana correspondiente. 
+
+
+## KNN HighD
+
+Faiss (Facebook AI Similarity Search): Es conocida por su eficacia en la búsqueda de vecinos más cercanos y la búsqueda de similitud en espacios vectoriales. En este caso utlizaremos el índice de Faiss **`IndexIVFFlat`** que utilza una técnica llamada Inverted File Indexing (IVF) y utiliza el cuantizador plano **`IndexFlatL2`** para cuantificar los vectores en las celdas del índice IVF.
+
+
+![faiss](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/0a87f89b-3335-48fe-90e2-d24b2b5a7783)
+
+![ejem](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/f722da10-0132-4b48-bb34-51c8395cb865)
+
+
+**Creación del índice Faiss:**
+
+```python
+quantizer = faiss.IndexFlatL2(feature_matrix.shape[1])
+index = faiss.IndexIVFFlat(quantizer, feature_matrix.shape[1], 3)
+```
+- Se utiliza **`faiss.IndexIVFFlat`** como índice Inverted File Index (IVF) plano. Este índice segmenta el espacio de búsqueda en celdas, organizando una lista invertida para cada celda. La construcción de listas invertidas facilita la búsqueda eficiente en conjuntos de datos de alta dimensionalidad, ya que reduce el espacio de búsqueda a celdas específicas, mejorando significativamente la velocidad de recuperación de vecinos más cercanos. Difinimos a 'nprobe' (Cuantos `centroides` se exploran durante la búsuqeda) con 3 pero se puede mejorar según la presición de la búsqueda y la velocidad.  
+
+- Se utiliza **`faiss.IndexFlatL2`** como cuantizador plano. Este componente se encarga de asignar los vectores de características a celdas específicas en función de su proximidad, utilizando la distancia euclidiana como medida de proximidad. Esta elección de cuantizador permite una rápida cuantificación de los vectores para su posterior indexación.
+
+
+**Adición de datos al índice:**
+
+```python
+index.train(feature_matrix)
+index.add(feature_matrix)
+```
+Se entrena el `índice Faiss` con la matriz de características utilizando el método 'train'. Luego se añaden los vectores de características al índice utilizando el método 'add'.
+
+**Lectura y escritura del índice:**
+
+```python
+faiss.write_index(index, 'index_file')
+```
+- Utilizando el método write_index.
+
+**La búsqueda de vecinos más cercanos:**
+```python
+distances, indices = index.search(query_matrix, K)
+```
+- Se realiza una búsqueda de k vecinos más cercanos en el índice Faiss utilizando el vector de consulta 'query_vector'. Devuelve una lista de tuplas, donde cada tupla contiene el identificador de la pista de audio (audio_path) y la distancia asociada.
+  
+![index2](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/05d19b20-dca9-4079-8613-77c525fc7b5c)
+
+![index](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/e7be27f1-a093-45ec-a533-122459d36f6e)
+
+- **Desventajas**
+    -  Consumo de memoria: La creación de índices IVF puede requerir más memoria, siendo una limitación en conjuntos de datos grandes o en entornos con recursos limitados.
+    - Entrenamiento: Antes de las búsquedas, el índice IVF necesita ser entrenado con datos de entrenamiento, añadiendo un paso computacionalmente costosos, especialmente para conjuntos de datos extensos.
+    - Tamaño del índice: Los índices IVF tienden a ser más grandes en comparación con índices más simples, lo que puede ser crítico si el espacio de almacenamiento es limitado.
+
+## Análisis de la maldición de la dimensionalidad y como mitigarlo
+
+![Análisis](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/22053932-3678-4d87-aa29-186f2a643ef0)
+
+### **¿Qué es el análisis de la maldición de la dimensionalidad?**
+
+La efectividad del algoritmo KNN disminuye en entornos de alta dimensionalidad debido a desafíos específicos. A medida que se incrementa el número de características, los cálculos de distancias y la identificación de vecinos cercanos se vuelven más costosos computacionalmente. La premisa de que puntos similares están cercanos se vuelve menos válida, ya que las distancias entre puntos pierden su distintividad. 
+
+![Análisis1](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/2afb3f3c-4994-4c3b-98ee-15298d10da33)
+
+
+### **¿Cómo mitigarlo?**
+
+**`Reducción de Datos: `**
+
+Aborda la maldición de la dimensionalidad utilizando técnicas como selección y extracción de funciones (PCA, kernel) para conservar la relevancia en espacios de baja dimensión.
+
+**`K-NN Aproximado`**
+
+Cuando la búsqueda exacta se vuelve costosa, se opta por algoritmos de k-NN aproximado. El hash sensible a la localidad (LSH) divide elementos similares en depósitos de alta probabilidad, ofreciendo una solución rápida para k-NN en entornos de alta dimensión. Proyecciones aleatorias y bosques de proyección aleatoria (rpForests) permiten transformar datos y realizar agrupaciones aproximadas de manera eficiente para encontrar vecinos más cercanos.
+
+`Fuentes:`
+- https://www.baeldung.com/cs/k-nearest-neighbors
+- https://es.quora.com/Qu%C3%A9-es-la-maldici%C3%B3n-de-la-dimensionalidad
+- https://www.youtube.com/watch?v=nhgCwWGNDiM
 
 
 # Frontend (GUI)
@@ -582,11 +686,19 @@ Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de o
 
 - Nuestra implementación de índice invertido a la hora de hacer el filtrado pierda algunos términos ya que estos pueden estar concatenados con símbolos raros (".!-) y esto puede ocacionar que la búsqueda de ciertos documentos que contienen estas palabras no sean exactos.
 
-### Conclusión
+### Conclusiones
 
 Los resultados de nuestra comparación indican que PostgreSQL supera ligeramente a nuestra implementación personalizada de índice invertido en términos de rendimiento en la mayoría de los escenarios. Aunque nuestra implementación es eficiente, PostgreSQL, con su optimización interna y capacidad para manejar grandes conjuntos de datos, muestra tiempos de búsqueda ligeramente más bajos en las pruebas. Por otro lado a la hora de búsqueda por similitud de audio, podemos darnos cuenta que la mejor opción fue el Índice IVFFlat de Faiss ya que esye divide los audios por clústers, para asi reducir la cantidad de comparaciones.
 
 
+### Referencias bibliográficas
 
+
+
+- A. Guttman. R-trees: A dynamic index structure for spatial searching. In Proc. ACM International Conference on Management of Data (SIGMOD’84), pages 47—57. ACM Press 1984
+- Baeldung. (s.f.). K-Nearest Neighbors (KNN) Algorithm in C#. Baeldung. https://www.baeldung.com/cs/k-nearest-neighbors
+- Facebook Research. (Año). Faiss: A library for efficient similarity search and clustering. Recuperado de https://github.com/facebookresearch/faiss
+- FAISS. (s.f.). IndexIVFFlat. Faiss. https://faiss.ai/cpp_api/struct/structfaiss_1_1IndexIVFFlat.html
+- Pinecone. Faiss Tutorial. Pinecone Learn. https://www.pinecone.io/learn/series/faiss/faiss-tutorial/
 
 
