@@ -94,6 +94,10 @@ export default {
   margin-bottom: 5px;
   margin-top: 3px;
   font-size: 1.5em;
+  max-width: 780px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .song-artist {
