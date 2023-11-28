@@ -424,32 +424,7 @@ def build_document_vectors(self, query):
 
 ```
 
-1. **Obtención de Términos Únicos:**
-    - **`terms = list(set())`**: Se inicializa una lista vacía para almacenar términos únicos.
-    - Se obtienen los archivos en el directorio 'global_index' que contienen los índices invertidos de los documentos.
-    - Se recorre cada archivo y se carga el índice invertido de cada documento.
-2. **Actualización de Términos con Índice Invertido:**
-    - Se verifica si el índice invertido está presente y si es una lista.
-    - Si es una lista, se agregan los términos a la lista **`terms`** extrayendo el término de cada elemento en la lista.
-    - Si no es una lista, se asume que es un diccionario y se agregan las claves del diccionario a **`terms`**.
-3. **Manejo de Términos de Consulta:**
-    - Se agregan los términos presentes en la consulta (**`query.keys()`**) a la lista de términos (**`terms`**).
-    - La lista de términos se ordena y se eliminan duplicados.
-4. **Creación del Índice de Términos:**
-    - Se crea un diccionario **`term_index`** donde las claves son los términos y los valores son los índices correspondientes en el vector.
-5. **Construcción de Vectores de Documentos:**
-    - Se recorren nuevamente los archivos de índice invertido.
-    - Para cada término en el índice invertido y sus documentos asociados, se actualiza el vector del documento (**`doc_vectors`**) con la frecuencia del término (**`tf`**) en ese documento.
-6. **Ajuste de Longitud de Vectores de Documentos:**
-    - Después de construir los vectores para todos los documentos, se verifica si algún vector es más corto que la longitud total de términos.
-    - Si es más corto, se agrega relleno (**`np.pad`**) para que todos los vectores tengan la misma longitud.
-7. **Construcción del Vector de Consulta:**
-    - Se inicializa un vector de ceros para la consulta (**`query_vector`**) con la misma longitud que la lista de términos.
-    - Se actualiza el vector de consulta con las frecuencias de términos presentes en la consulta.
-8. **Cálculo del IDF para la Consulta:**
-    - Para cada término en la consulta, se calcula el Inverse Document Frequency (IDF) utilizando la fórmula **`idf_t = math.log(len(inverted_index) / df_t)`**, donde **`df_t`** es la frecuencia documental del término.
-9. **Retorno de Resultados:**
-    - La función devuelve dos objetos: **`doc_vectors`**, un diccionario donde las claves son los ID de documentos y los valores son los vectores de documentos; y **`query_vector`**, el vector de la consulta.
+- `build_document_vectors()` construye vectores de documentos y un vector de consulta basados en un índice invertido. Se procesan los términos únicos y se construye un índice de términos. Luego, se iteran sobre los archivos de índice invertido para actualizar los vectores de documentos con las frecuencias de términos. Finalmente, se asegura de que los vectores de documentos tengan la misma longitud que la lista de términos y se construye el vector de consulta con las frecuencias de términos presentes en la consulta.
 
 ```python
 def show_top_k(self, query, k, dataset):
