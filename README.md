@@ -218,7 +218,40 @@ Con el índice invertido ya construído se pueden realizar consultas de búsqued
 
 # Frontend (GUI)
 
-## Screenshots de la UI
+## Mini-manual de usuarios
+### Paso 1: Clonar el Repositorio
+
+```bash
+git clone https://github.com/Diegospf12/CapibaraGrooveFinder
+cd CapibaraGrooveFinder
+```
+
+### Paso 2: Configuración del Backend
+
+Instalar dependencias
+```bash
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Ejecutar servidor
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+### Paso 3: Configuración del Frontend
+
+Instalar dependencias
+```bash
+cd frontend
+npm install
+npm run serve
+```
+
+## Screenshots
 ![[Main page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/main.png)
 ![[Lyrics page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/lyrics.png)
 ![[Similar page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/similarpage.png)
