@@ -209,14 +209,14 @@ Construimos un índice invertido en RAM llamado `local_index` a partir de una 
 
 ```python
 	#Dentro del for term in doc["terms"]:
-		        if(terms_processed >= terms_processed_per_block):
-		            sorted_dictionary = collections.OrderedDict(sorted(local_index.items()))
-		            os.makedirs('local_indexes', exist_ok=True)
-		            with open(f'local_indexes/block_{block_number}.json', 'w') as file:
-		                json.dump(sorted_dictionary, file)
-		            local_index.clear()
-		            block_number += 1
-		            terms_processed = 0
+		if(terms_processed >= terms_processed_per_block):
+		    sorted_dictionary = collections.OrderedDict(sorted(local_index.items()))
+		    os.makedirs('local_indexes', exist_ok=True)
+		    with open(f'local_indexes/block_{block_number}.json', 'w') as file:
+			json.dump(sorted_dictionary, file)
+		    local_index.clear()
+		    block_number += 1
+		    terms_processed = 0
 ```
 
 Esta parte del código se encarga de guardar los índices locales en archivos separados (Bloques) cuando se alcanza un cierto número de términos procesados. Esto ayuda a dividir el proceso de indexación en bloques más pequeños y facilita la gestión de los datos, permitiendo que la RAM no llegue a su capacidad máxima al almacenar el índice invertido local.
