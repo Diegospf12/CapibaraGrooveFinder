@@ -31,12 +31,6 @@ Proyecto 3 del curso de Base de datos 2. Construcción del índice invertido tex
 
 # Introducción
 
-## Índice invertido textual
-El índice invertido es una estructura de datos utilizada en motores de búsqueda y sistemas de recuperación de información. Consiste en un diccionario que mapea términos a una lista de documentos en los que aparecen esos términos. Esta estructura permite una búsqueda eficiente de documentos que contengan ciertos términos clave. 
-
-## Índice multidimensional
-Un índice multidimensional es una estructura de datos que permite organizar y acceder a información en múltiples dimensiones. Se utiliza para representar y buscar datos que tienen múltiples atributos o características.
-
 ## Objetivo del proyecto
 El presente proyecto tiene como objetivo desarrollar estas estructuras de datos de manera eficiente, con motivo de realizar búsquedas rápidas en un conjunto de documentos.
 Con respecto al índice invertido textual, se utiliza para asociar términos de consulta con los documentos que los contienen ya que mejora la velocidad y precisión del retorno de información, lo que facilita la recuperación eficiente de documentos relevantes en función de los términos de búsqueda.
