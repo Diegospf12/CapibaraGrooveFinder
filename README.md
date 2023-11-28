@@ -256,8 +256,7 @@ npm run serve
 ![[Lyrics page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/lyrics.png)
 ![[Similar page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/similarpage.png)
 
-## ¿Cómo se utiliza la GUI?
-Dentro de la carpeta frontend se ejecuta el archivo main.py, este desplegara una ventana en la cual se puede crear un usuario o inciar sesion. Posteriormente en la ventana principal podras realizar la busqueda ingresando una busqueda textual y el numero que se desea. en la lista inferior apareceran los resultados y a su vez se mostrara el tiempo que tardo y el total de resultados que se retornan al realizar la consulta.
+## Análisis comparativo visual con otras implementaciones
 
 # Experimentación
 
