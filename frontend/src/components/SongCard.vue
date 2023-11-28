@@ -7,10 +7,6 @@
       <p class="song-score">Score: {{ track.score }}</p>
     </div>
     <div>
-      <!--audio controls class="song-preview" @loadeddata="updatePreviewUrl">
-      <source :src="previewUrl" type="audio/mpeg">
-      Tu navegador no soporta el elemento de audio.
-    </audio-->
       <button @click="openSimilarModal" type="button"
         class="inline-block rounded-full bg-neutral-50 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-neutral-800 shadow-[0_4px_9px_-4px_#cbcbcb] transition duration-150 ease-in-out hover:bg-neutral-100 hover:shadow-[0_8px_9px_-4px_rgba(203,203,203,0.3),0_4px_18px_0_rgba(203,203,203,0.2)] focus:bg-neutral-100 focus:shadow-[0_8px_9px_-4px_rgba(203,203,203,0.3),0_4px_18px_0_rgba(203,203,203,0.2)] focus:outline-none focus:ring-0 active:bg-neutral-200 active:shadow-[0_8px_9px_-4px_rgba(203,203,203,0.3),0_4px_18px_0_rgba(203,203,203,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(251,251,251,0.3)] dark:hover:shadow-[0_8px_9px_-4px_rgba(251,251,251,0.1),0_4px_18px_0_rgba(251,251,251,0.05)] dark:focus:shadow-[0_8px_9px_-4px_rgba(251,251,251,0.1),0_4px_18px_0_rgba(251,251,251,0.05)] dark:active:shadow-[0_8px_9px_-4px_rgba(251,251,251,0.1),0_4px_18px_0_rgba(251,251,251,0.05)]">
         Similares
@@ -43,23 +39,11 @@ export default {
   },
   data() {
     return {
-      previewUrl: this.track.preview_url,
       showLyrics: false,
       showSimilar: false,
     };
   },
-  watch: {
-    'track.preview_url': function (newUrl) {
-      this.previewUrl = '';
-      this.$nextTick(() => {
-        this.previewUrl = newUrl;
-      });
-    }
-  },
   methods: {
-    updatePreviewUrl() {
-      this.previewUrl = this.track.preview_url;
-    },
     openLyricsModal() {
       this.showLyrics = true;
     },
@@ -71,12 +55,12 @@ export default {
 </script>
   
 <style scoped>
-
 .bg-neutral-800 {
   background-color: rgb(76, 158, 83);
   margin-left: 5px;
   /* Resto de las propiedades CSS... */
 }
+
 .song-card {
   display: flex;
   /*border: 1px solid #ccc;*/
@@ -110,10 +94,6 @@ export default {
   margin-bottom: 5px;
   margin-top: 3px;
   font-size: 1.5em;
-}
-
-.song-lyrics {
-  margin: 10px 0;
 }
 
 .song-artist {

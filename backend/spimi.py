@@ -277,7 +277,7 @@ def obtener_abreviatura_idioma(texto):
     return Language.get(idioma_detectado).language
 
 
-"""
+'''
 if __name__ == "__main__":
     data = LoadData('spotify_songs.csv').get_data()
     #spimi = SPIMI(data)
@@ -292,4 +292,5 @@ if __name__ == "__main__":
     print("Results for Query:", query)
 
     text_retrival.show_results(query, lenguage , k, data)
-"""
+    '''
+

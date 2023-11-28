@@ -2,18 +2,20 @@
   <form class="flex w-1/6 mt-4 mb-4 items-center mx-auto">
     <span class="ms-3 text-sm font-medium mr-4 text-gray-900 dark:text-white">MyIndex</span>
     <label class="relative inline-flex items-center me-5 cursor-pointer">
-    <input type="checkbox" v-model="option" class="sr-only peer" checked>
-    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-white">Postgres</span>
-  </label>
+      <input type="checkbox" v-model="option" class="sr-only peer" checked>
+      <div
+        class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600">
+      </div>
+      <span class="ms-3 text-sm font-medium text-gray-900 dark:text-white">Postgres</span>
+    </label>
   </form>
   <form class="flex w-1/2 items-center mx-auto">
     <div class="relative w-3/6">
       <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-          fill="none" viewBox="0 0 21 21">
-          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M11.15 5.6h.01m3.337 1.913h.01m-6.979 0h.01M5.541 11h.01M15 15h2.706a1.957 1.957 0 0 0 1.883-1.325A9 9 0 1 0 2.043 11.89 9.1 9.1 0 0 0 7.2 19.1a8.62 8.62 0 0 0 3.769.9A2.013 2.013 0 0 0 13 18v-.857A2.034 2.034 0 0 1 15 15Z" />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.0" stroke="currentColor"
+          class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
         </svg>
       </div>
       <input v-model="query" type="text" id="voice-search"
@@ -39,7 +41,8 @@
   <p v-if="time" class="execution-time"> Tiempo de ejecución: {{ time }} ms </p>
 
   <transition-group name="fade" tag="div">
-    <div v-for="(track, index) in tracks" :key="track.id" class="song-card-container" :style="{ animationDelay: index * 0.5 + 's' }">
+    <div v-for="(track, index) in tracks" :key="track.id" class="song-card-container"
+      :style="{ animationDelay: index * 0.5 + 's' }">
       <SongCard :track="track" />
     </div>
   </transition-group>
@@ -63,7 +66,7 @@ export default {
   },
   methods: {
     async search() {
-      this.tracks = []; 
+      this.tracks = [];
       const optionText = this.option ? 'postgres' : 'myindex';
       const response = await fetch(`http://localhost:8000/search?query=${this.query}&k=${this.k}&option=${optionText}`)
       const data = await response.json()
@@ -83,16 +86,8 @@ export default {
   margin-bottom: 15px;
 }
 
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
-}
-
-.fade-enter, .fade-leave-to {
-  opacity: 0;
-}
-
 .song-card-container {
-  max-width: 80%; /* Ajusta este valor para cambiar el ancho máximo de las tarjetas */
+  max-width: 80%;
   margin: auto;
   margin-top: 10px;
   margin-bottom: 10px;
@@ -100,7 +95,13 @@ export default {
 }
 
 @keyframes fadeIn {
-  0% { opacity: 0; transform: translateY(-30px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-</style>
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}</style>

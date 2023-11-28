@@ -2,16 +2,23 @@ import heapq
 from scipy.spatial import distance
 import psycopg2
 from feature_extraction import feature_extraction
+import time
 
 from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+
+conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
+cur = conn.cursor()
+
+cur.execute("SELECT track_id, mfcc FROM vectores")
+features = {row[0]: row[1] for row in cur.fetchall()}
+
+cur.close()
+conn.close()
 
 def knn_search(query_vector, K):
 
     conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
-
-    cur.execute("SELECT track_id, mfcc FROM vectores")
-    features = {row[0]: row[1] for row in cur.fetchall()}
 
     distances = [(audio_path, distance.euclidean(query_vector, feature_vector)) for audio_path, feature_vector in features.items()]
     
@@ -27,9 +34,6 @@ def range_search(query_vector, radius):
 
     conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
-
-    cur.execute("SELECT track_id, mfcc FROM songs")
-    features = {row[0]: row[1] for row in cur.fetchall()}
 
     distances = [(audio_path, distance.euclidean(query_vector, feature_vector)) for audio_path, feature_vector in features.items()]
     

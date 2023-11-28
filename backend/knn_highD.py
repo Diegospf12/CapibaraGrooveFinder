@@ -2,6 +2,7 @@ import numpy as np
 import faiss
 import psycopg2
 from feature_extraction import feature_extraction
+import time
 
 from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
@@ -42,19 +43,25 @@ def create_index():
     cur.close()
     conn.close()
 
-def knn_search_faiss(query_vector, K):
 
+conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
+cur = conn.cursor()
+
+cur.execute("SELECT track_id, mfcc FROM vectores")
+features = {row[0]: row[1] for row in cur.fetchall()}
+
+cur.execute("SELECT index_blob FROM index_table ORDER BY id DESC LIMIT 1")
+index_blob = cur.fetchone()[0]
+
+cur.close()
+conn.close()
+
+with open('index_file', 'wb') as f:
+    f.write(index_blob)
+
+def knn_search_faiss(query_vector, K):
     conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
-
-    cur.execute("SELECT track_id, mfcc FROM vectores")
-    features = {row[0]: row[1] for row in cur.fetchall()}
-
-    cur.execute("SELECT index_blob FROM index_table ORDER BY id DESC LIMIT 1")
-    index_blob = cur.fetchone()[0]
-
-    with open('index_file', 'wb') as f:
-        f.write(index_blob)
 
     index = faiss.read_index('index_file')
 
