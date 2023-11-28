@@ -8,6 +8,8 @@ import time
 import os
 from dotenv import load_dotenv
 import psycopg2
+import base64
+import re
 
 from knn_highD import knn_search_faiss
 from knn_rtree import knn_search_rtree
@@ -71,8 +73,12 @@ async def search(query: str, k: int, option:str):
     conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
 
-    # Reemplaza los espacios en la consulta con el operador '&'
-    ts_query = query.replace(' ', ' & ')
+    # Limpia la consulta
+    ts_query = re.sub(r'[^a-zA-ZÑñáéíóúÁÉÍÓÚ]', ' ', query)
+    ts_query = ts_query.replace(' ', '&')
+    ts_query = re.sub(r'&{2,}', '&', ts_query) 
+    ts_query = re.sub(r'&$', '', ts_query) 
+    ts_query = re.sub(r'^&', '', ts_query) 
 
     results = []
 
@@ -172,7 +178,7 @@ async def get_top_k(track_id: str, k: int):
                     'preview_url': track['preview_url'],
                     'distance': float(distance),
                     'url': track['external_urls']['spotify'],
-                    'image': track['album']['images'][0]['url'] 
+                    'image': track['album']['images'][0]['url']
                 })
                 break
             except requests.exceptions.ReadTimeout:
