@@ -357,47 +357,71 @@ def cosine_similarity(self, query_vector, doc_vectors, k):
 - Se seleccionan los primeros k documentos más similares y se devuelven en un formato específico.
 
 ```python
+# Construir vectores de documentos y vector de consulta
 def build_document_vectors(self, query):
+    # Inicializar variables
     terms = list(set())
     files = os.listdir('global_index')
     doc_vectors = {}  # Nuevo diccionario para almacenar los vectores de los documentos
+    
+    # Iterar sobre archivos de índice invertido para construir términos únicos
     for file in files:
         with open(os.path.join('global_index', file), 'r') as f:
             inverted_index = json.load(f)
+            
+            # Actualizar términos con los del índice invertido
             if inverted_index:
-                if inverted_index:
-                    if isinstance( inverted_index, list):
-                        terms.update([item['term'] for w in inverted_index for item in w])
-                    else:
-                        terms.update(inverted_index.keys())
+                if isinstance(inverted_index, list):
+                    terms.update([item['term'] for w in inverted_index for item in w])
+                else:
+                    terms.update(inverted_index.keys())
+    
+    # Preparar lista de términos única y crear índice de términos
     terms = list(terms)
     terms.extend(query.keys())
     terms = sorted(set(terms))
     term_index = {term: index for index, term in enumerate(terms)}
+    
+    # Iterar sobre archivos de índice invertido para construir vectores de documentos
     for file in files:
         with open(os.path.join('global_index', file), 'r') as f:
             inverted_index = json.load(f)
-            for term, term_docs in inverted_index.items():  # Definir 'term' aquí
+            
+            # Iterar sobre términos y documentos en el índice invertido
+            for term, term_docs in inverted_index.items():
+                # Definir 'term' para este contexto
+                
+                # Iterar sobre la información de documentos para el término
                 for doc_info in term_docs:
                     doc_id = doc_info['id']
+                    
+                    # Inicializar el vector del documento si no existe
                     if doc_id not in doc_vectors:
-                        doc_vectors[doc_id] = np.zeros(len(terms))  # Inicializar el vector del documento
+                        doc_vectors[doc_id] = np.zeros(len(terms))
+                    
+                    # Actualizar el vector del documento con la frecuencia del término
                     tf = doc_info['tf']
-                    doc_vectors[doc_id][term_index[term]] = tf  # Actualizar el vector del documento
+                    doc_vectors[doc_id][term_index[term]] = tf
+    
     # Actualizar los vectores de los documentos para que tengan la misma longitud que los términos
     for doc_id, vector in doc_vectors.items():
         if len(vector) < len(terms):
             doc_vectors[doc_id] = np.pad(vector, (0, len(terms) - len(vector)))
+    
+    # Inicializar vector de consulta con ceros y actualizar con frecuencias de términos en la consulta
     query_vector = np.zeros(len(terms))
     for term, tf in query.items():
         if term in inverted_index:
             df_t = len(inverted_index[term])
-            if idf_t == 0:
+            if df_t == 0:
                 df_t = 1
             idf_t = math.log(len(inverted_index) / df_t)
+        
         if term in term_index:
             query_vector[term_index[term]] = tf
+    
     return doc_vectors, query_vector
+
 ```
 
 1. **Obtención de Términos Únicos:**
