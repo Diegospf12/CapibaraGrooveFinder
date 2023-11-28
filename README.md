@@ -283,6 +283,10 @@ Nuestra implementación personalizada de índice invertido ha demostrado ser efi
 
 Por otro lado, hemos utilizado PostgreSQL con sus propios índices invertidos para realizar búsquedas de texto similares a nuestras pruebas con datos de prueba de tamaños comparables.
 
+### Gráfico comparativo
+
+![graph1](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/grafico_comparativo_1.png)
+
 ## Tabla de resultados de índices multidimensionales
 
 Ejecutamos el KNN-RTree, KNN-secuencial y el KNN-HighD sobre una colección de objetos de tamaño N y comparamos la eficiencia en función del tiempo de ejecución
