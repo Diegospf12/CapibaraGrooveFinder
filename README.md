@@ -335,96 +335,54 @@ def dict_query(self, query):
 - La consulta se convierte en un diccionario donde las claves son los términos y los valores son las frecuencias de cada término en la consulta.
 
 ```python
-def cosine_similarity(self, query_vector, doc_vectors, k):
-    similarities = {}
-    for doc_id, doc_vector in doc_vectors.items():
-        doc_norm = np.linalg.norm(doc_vector)
-        if doc_norm == 0:
-            similarity =0
-        else:
-            similarity = np.dot(query_vector, doc_vector) / (np.linalg.norm(query_vector) * doc_norm)
+    def cosine_score(self, query, lenguage, k):
+        processed_query = self.process_query(query, lenguage)
+        query_tf = {term: processed_query.count(term) for term in processed_query}
+        norm_q = math.sqrt(sum(tf**2 for tf in query_tf.values()))
 
-        similarities[doc_id] = similarity
-    # Ordenar los documentos por similitud
-    sorted_docs = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
-    # Seleccionar los k documentos más similares
-    top_k_docs = [{'id': doc_id, 'score': score} for doc_id, score in sorted_docs[:k]]
-    return top_k_docs
+        document_scores = defaultdict(float)
+
+        for index_file in glob.glob('global_index/*.json'):
+            with open(index_file, 'r') as file:
+                inverted_index = json.load(file)
+
+            for term, tf_q in query_tf.items():
+                if term in inverted_index:
+                    df_t = len(inverted_index[term])
+                    idf_t = math.log(len(inverted_index) / (1 + df_t))
+                    tfidf_t_q = (1 + math.log(tf_q)) * idf_t
+
+                    for doc in inverted_index[term]:
+                        tfidf_t_d = (1 + math.log(doc["tf"])) * idf_t
+                        document_scores[doc["id"]] += tfidf_t_d * tfidf_t_q
+
+        for doc_id in document_scores:
+            document_scores[doc_id] /= norm_q
+
+        try:
+            max_score = max(document_scores.values())
+        except ValueError:
+            max_score = 0
+        if max_score != 0:
+            for doc_id in document_scores:
+                document_scores[doc_id] /= max_score
+
+        sorted_documents = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
+
+        sorted_documents_with_freq = []
+        for doc_id, score in sorted_documents:
+            doc_freq = sum(1 for term in query_tf if any(doc["id"] == doc_id and term == doc["term"] for doc in inverted_index.get(term, [])))
+            sorted_documents_with_freq.append((doc_id, score, doc_freq))
+
+        sorted_documents_with_freq = sorted(sorted_documents_with_freq, key=lambda x: (x[1], x[2]), reverse=True)
+
+        return [{"id": doc_id, "score": score, "freq": freq} for doc_id, score, freq in sorted_documents_with_freq[:k]]
+
 ```
 
 - Calcula la similitud coseno entre el vector de consulta y cada vector de documento.
 - Los resultados se almacenan en un diccionario **`similarities`**, que se ordena según las puntuaciones de similitud en orden descendente.
 - Se seleccionan los primeros k documentos más similares y se devuelven en un formato específico.
-
-```python
-# Construir vectores de documentos y vector de consulta
-def build_document_vectors(self, query):
-    # Inicializar variables
-    terms = list(set())
-    files = os.listdir('global_index')
-    doc_vectors = {}  # Nuevo diccionario para almacenar los vectores de los documentos
-    
-    # Iterar sobre archivos de índice invertido para construir términos únicos
-    for file in files:
-        with open(os.path.join('global_index', file), 'r') as f:
-            inverted_index = json.load(f)
-            
-            # Actualizar términos con los del índice invertido
-            if inverted_index:
-                if isinstance(inverted_index, list):
-                    terms.update([item['term'] for w in inverted_index for item in w])
-                else:
-                    terms.update(inverted_index.keys())
-    
-    # Preparar lista de términos única y crear índice de términos
-    terms = list(terms)
-    terms.extend(query.keys())
-    terms = sorted(set(terms))
-    term_index = {term: index for index, term in enumerate(terms)}
-    
-    # Iterar sobre archivos de índice invertido para construir vectores de documentos
-    for file in files:
-        with open(os.path.join('global_index', file), 'r') as f:
-            inverted_index = json.load(f)
-            
-            # Iterar sobre términos y documentos en el índice invertido
-            for term, term_docs in inverted_index.items():
-                # Definir 'term' para este contexto
-                
-                # Iterar sobre la información de documentos para el término
-                for doc_info in term_docs:
-                    doc_id = doc_info['id']
-                    
-                    # Inicializar el vector del documento si no existe
-                    if doc_id not in doc_vectors:
-                        doc_vectors[doc_id] = np.zeros(len(terms))
-                    
-                    # Actualizar el vector del documento con la frecuencia del término
-                    tf = doc_info['tf']
-                    doc_vectors[doc_id][term_index[term]] = tf
-    
-    # Actualizar los vectores de los documentos para que tengan la misma longitud que los términos
-    for doc_id, vector in doc_vectors.items():
-        if len(vector) < len(terms):
-            doc_vectors[doc_id] = np.pad(vector, (0, len(terms) - len(vector)))
-    
-    # Inicializar vector de consulta con ceros y actualizar con frecuencias de términos en la consulta
-    query_vector = np.zeros(len(terms))
-    for term, tf in query.items():
-        if term in inverted_index:
-            df_t = len(inverted_index[term])
-            if df_t == 0:
-                df_t = 1
-            idf_t = math.log(len(inverted_index) / df_t)
-        
-        if term in term_index:
-            query_vector[term_index[term]] = tf
-    
-    return doc_vectors, query_vector
-
-```
-
-- `build_document_vectors()` construye vectores de documentos y un vector de consulta basados en un índice invertido. Se procesan los términos únicos y se construye un índice de términos. Luego, se iteran sobre los archivos de índice invertido para actualizar los vectores de documentos con las frecuencias de términos. Finalmente, se asegura de que los vectores de documentos tengan la misma longitud que la lista de términos y se construye el vector de consulta con las frecuencias de términos presentes en la consulta.
 
 ```python
 def show_top_k(self, query, k, dataset):
