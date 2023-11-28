@@ -257,6 +257,8 @@ npm run serve
 ![[Similar page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/similarpage.png)
 
 ## Análisis comparativo visual con otras implementaciones
+![[Similar page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/example1.png)
+![[Similar page]](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/example2.png)
 
 # Experimentación
 
