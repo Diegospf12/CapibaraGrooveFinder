@@ -517,31 +517,6 @@ La función `knn_search_rtree` va a recibir un vector de consulta 'query_vector'
 El algoritmo KNN en espacios de alta dimensión (High D) es un método de aprendizaje supervisado que se utiliza para clasificación y regresión. Dado un conjunto de datos de entrenamiento con etiquetas conocidas, el algoritmo KNN clasifica nuevos ejemplos en función de la similitud de sus características con las de los ejemplos de entrenamiento.
 
 
-### **¿Qué la maldición de la dimensionalidad?**
-
-La efectividad del algoritmo KNN disminuye en entornos de alta dimensionalidad debido a desafíos específicos. 
-
-En un espacio de alta dimensión, la eficiencia del algoritmo KNN puede verse afectada debido a la "maldición de la dimensionalidad". Esto se refiere al fenómeno en el que el volumen del espacio de características aumenta tan rápidamente con el aumento de la dimensionalidad que los datos se vuelven escasos y dispersos. A medida que se incrementa el número de características, los cálculos de distancias y la identificación de vecinos cercanos se vuelven más costosos computacionalmente. La premisa de que puntos similares están cercanos se vuelve menos válida, ya que las distancias entre puntos pierden su distintividad. 
-
-Para superar este problema, se utilizan técnicas de reducción de la dimensionalidad o usos de métodos de indexación eficientes. En nuestro caso, aplicamos el FAISS de Facebook para acelerar las consultas.
-
-![Análisis1](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/2afb3f3c-4994-4c3b-98ee-15298d10da33)
-
-## Análisis de la maldición de la dimensionalidad y como mitigarlo
-
-![Análisis](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/22053932-3678-4d87-aa29-186f2a643ef0)
-
-
-### **¿Cómo mitigarlo?**
-
-**`Reducción de Datos: `**
-
-Aborda la maldición de la dimensionalidad utilizando técnicas como selección y extracción de funciones (PCA, kernel) para conservar la relevancia en espacios de baja dimensión.
-
-**`K-NN Aproximado`**
-
-Cuando la búsqueda exacta se vuelve costosa, se opta por algoritmos de k-NN aproximado. El hash sensible a la localidad (LSH) divide elementos similares en depósitos de alta probabilidad, ofreciendo una solución rápida para k-NN en entornos de alta dimensión. Proyecciones aleatorias y bosques de proyección aleatoria (rpForests) permiten transformar datos y realizar agrupaciones aproximadas de manera eficiente para encontrar vecinos más cercanos.
-
 ### Faiss (Facebook AI Similarity Search) 
 
 Es conocida por su eficacia en la búsqueda de vecinos más cercanos y la búsqueda de similitud en espacios vectoriales. En este caso utlizaremos el índice de Faiss **`IndexIVFFlat`** que utilza una técnica llamada Inverted File Indexing (IVF) y utiliza el cuantizador plano **`IndexFlatL2`** para cuantificar los vectores en las celdas del índice IVF.
@@ -587,6 +562,32 @@ distances, indices = index.search(query_matrix, K)
 ![index2](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/05d19b20-dca9-4079-8613-77c525fc7b5c)
 
 ![index](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/e7be27f1-a093-45ec-a533-122459d36f6e)
+
+
+### **¿Qué la maldición de la dimensionalidad?**
+
+La efectividad del algoritmo KNN disminuye en entornos de alta dimensionalidad debido a desafíos específicos. 
+
+En un espacio de alta dimensión, la eficiencia del algoritmo KNN puede verse afectada debido a la "maldición de la dimensionalidad". Esto se refiere al fenómeno en el que el volumen del espacio de características aumenta tan rápidamente con el aumento de la dimensionalidad que los datos se vuelven escasos y dispersos. A medida que se incrementa el número de características, los cálculos de distancias y la identificación de vecinos cercanos se vuelven más costosos computacionalmente. La premisa de que puntos similares están cercanos se vuelve menos válida, ya que las distancias entre puntos pierden su distintividad. 
+
+Para superar este problema, se utilizan técnicas de reducción de la dimensionalidad o usos de métodos de indexación eficientes. En nuestro caso, aplicamos el FAISS de Facebook para acelerar las consultas.
+
+![Análisis1](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/2afb3f3c-4994-4c3b-98ee-15298d10da33)
+
+## Análisis de la maldición de la dimensionalidad y como mitigarlo
+
+![Análisis](https://github.com/Diegospf12/CapibaraGrooveFinder/assets/91237434/22053932-3678-4d87-aa29-186f2a643ef0)
+
+
+### **¿Cómo mitigarlo?**
+
+**`Reducción de Datos: `**
+
+Aborda la maldición de la dimensionalidad utilizando técnicas como selección y extracción de funciones (PCA, kernel) para conservar la relevancia en espacios de baja dimensión.
+
+**`K-NN Aproximado`**
+
+Cuando la búsqueda exacta se vuelve costosa, se opta por algoritmos de k-NN aproximado. El hash sensible a la localidad (LSH) divide elementos similares en depósitos de alta probabilidad, ofreciendo una solución rápida para k-NN en entornos de alta dimensión. Proyecciones aleatorias y bosques de proyección aleatoria (rpForests) permiten transformar datos y realizar agrupaciones aproximadas de manera eficiente para encontrar vecinos más cercanos.
 
 - **Desventajas**
     -  Consumo de memoria: La creación de índices IVF puede requerir más memoria, siendo una limitación en conjuntos de datos grandes o en entornos con recursos limitados.
