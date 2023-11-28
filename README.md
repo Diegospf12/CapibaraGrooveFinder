@@ -701,4 +701,7 @@ Los resultados de nuestra comparación indican que PostgreSQL supera ligeramente
 - FAISS. (s.f.). IndexIVFFlat. Faiss. https://faiss.ai/cpp_api/struct/structfaiss_1_1IndexIVFFlat.html
 - Pinecone. Faiss Tutorial. Pinecone Learn. https://www.pinecone.io/learn/series/faiss/faiss-tutorial/
 
+### Tareas asignadas
+
+![tasks](https://github.com/Diegospf12/CapibaraGrooveFinder/blob/main/images/tasks.png)
 
